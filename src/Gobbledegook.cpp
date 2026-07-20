@@ -379,112 +379,92 @@ int ggkWait()
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------
-//  ____  _             _      _   _
-// / ___|| |_ __ _ _ __| |_   | |_| |__   ___    ___  ___ _ ____   _____ _ __
-// \___ \| __/ _` | '__| __|  | __| '_ \ / _ \  / __|/ _ \ '__\ \ / / _ \ '__|
-//  ___) | || (_| | |  | |_   | |_| | | |  __/  \__ \  __/ |   \ V /  __/ |
-// |____/ \__\__,_|_|   \__|   \__|_| |_|\___|  |___/\___|_|    \_/ \___|_|
+//  _    _           _   _                 _
+// | |  (_)_ _  __ _| |_(_)___ _ _    __ _(_)_ _  __ _
+// | |__| | ' \/ _` |  _| / _ \ ' \  / _` | | ' \/ _` |
+// |____|_|_||_\__,_|\__|_\___/_||_| \__,_|_|_||_\__, |
+//                                               |___/
 //
+// New functions for explicit logging initialisation and server run
 // ---------------------------------------------------------------------------------------------------------------------------------
 
-// Set the server state to 'EInitializing' and then immediately create a server thread and initiate the server's async
-// processing on the server thread.
-//
-// At that point the current thread will block for maxAsyncInitTimeoutMS milliseconds or until initialization completes.
-//
-// If initialization was successful, the method will return a non-zero value with the server running on its own thread in
-// 'runServerThread'.
-//
-// If initialization was unsuccessful, this method will continue to block until the server has stopped. This method will then
-// return 0.
-//
-// IMPORTANT:
-//
-// The data setter uses void* types to allow receipt of unknown data types from the server. Ensure that you do not store these
-// pointers. Copy the data before returning from your getter delegate.
-//
-// Similarly, the pointer to data returned to the data getter should point to non-volatile memory so that the server can use it
-// safely for an indefinite period of time.
-//
-// pServiceName: The name of our server (collectino of services)
-//
-//     !!!IMPORTANT!!!
-//
-//     This name must match tha name configured in the D-Bus permissions. See the Readme.md file for more information.
-//
-//     This is used to build the path for our Bluetooth services. It also provides the base for the D-Bus owned name (see
-//     getOwnedName.)
-//
-//     This value will be stored as lower-case only.
-//
-//     Retrieve this value using the `getName()` method
-//
-// pAdvertisingName: The name for this controller, as advertised over LE
-//
-//     IMPORTANT: Setting the advertisingName will change the system-wide name of the device. If that's not what you want, set
-//     BOTH advertisingName and advertisingShortName to as empty string ("") to prevent setting the advertising
-//     name.
-//
-//     Retrieve this value using the `getAdvertisingName()` method
-//
-// pAdvertisingShortName: The short name for this controller, as advertised over LE
-//
-//     According to the spec, the short name is used in case the full name doesn't fit within Extended Inquiry Response (EIR) or
-//     Advertising Data (AD).
-//
-//     IMPORTANT: Setting the advertisingName will change the system-wide name of the device. If that's not what you want, set
-//     BOTH advertisingName and advertisingShortName to as empty string ("") to prevent setting the advertising
-//     name.
-//
-//     Retrieve this value using the `getAdvertisingShortName()` method
-//
-int ggkStart(const char *pServiceName, const char *pAdvertisingName, const char *pAdvertisingShortName, 
-	GGKServerDataGetter getter, GGKServerDataSetter setter, int maxAsyncInitTimeoutMS)
+/**
+ * Initialise the logging subsystem.
+ *
+ * This function must be called before any other GGK function, typically at the
+ * very start of your program. It sets up the internal logging infrastructure
+ * (spdlog) and configures the default log levels and sinks.
+ *
+ * After calling this, you may register custom log receivers using the
+ * ggkLogRegister* functions.
+ */
+void ggkInitLogging()
 {
+	// Redirect GLib output to this log method
+	printHandlerGLib = g_set_print_handler([](const gchar *string)
+	{
+		Logger::info(string);
+	});
+	printerrHandlerGLib = g_set_printerr_handler([](const gchar *string)
+	{
+		Logger::error(string);
+	});
+	logHandlerGLib = g_log_set_default_handler([](const gchar *log_domain, GLogLevelFlags log_levels, const gchar *message, gpointer /*user_data*/)
+	{
+		std::string str = std::string(log_domain) + ": " + message;
+		if ((log_levels & (G_LOG_FLAG_RECURSION|G_LOG_FLAG_FATAL)) != 0)
+		{
+			Logger::fatal(str);
+		}
+		else if ((log_levels & (G_LOG_LEVEL_CRITICAL|G_LOG_LEVEL_ERROR)) != 0)
+		{
+			Logger::error(str);
+		}
+		else if ((log_levels & G_LOG_LEVEL_WARNING) != 0)
+		{
+			Logger::warn(str);
+		}
+		else if ((log_levels & G_LOG_LEVEL_DEBUG) != 0)
+		{
+			Logger::debug(str);
+		}
+		else
+		{
+			Logger::info(str);
+		}
+	}, nullptr);
+}
+
+/**
+ * Run the GATT server using an existing server instance.
+ *
+ * This function takes ownership of the provided Server instance (via shared_ptr),
+ * registers it with BlueZ over D-Bus, starts the main event loop, and begins
+ * advertising the configured services. It blocks until the server is fully
+ * initialised or the timeout expires.
+ *
+ * @param pServer                Shared pointer to a Server instance (or a derived class).
+ *                               Must not be null. The server should have all its
+ *                               services, characteristics and descriptors already
+ *                               described (typically in its constructor).
+ * @param maxAsyncInitTimeoutMS  Maximum time (in milliseconds) to wait for
+ *                               asynchronous initialisation to complete.
+ *
+ * @return  1 on success, 0 on failure.
+ *
+ * @see ggkInitLogging, ggkWait, ggkTriggerShutdown
+ */
+int ggkRun(std::shared_ptr<Server> pServer, int maxAsyncInitTimeoutMS)
+{
+	if (!pServer) {
+		Logger::error("ggkRun() called with null Server pointer");
+		return 0;
+	}
+
 	try
 	{
-		//
-		// Start by capturing the GLib output
-		//
-
-		// Redirect GLib output to this log method
-		printHandlerGLib = g_set_print_handler([](const gchar *string)
-		{
-			Logger::info(string);
-		});
-		printerrHandlerGLib = g_set_printerr_handler([](const gchar *string)
-		{
-			Logger::error(string);
-		});
-		logHandlerGLib = g_log_set_default_handler([](const gchar *log_domain, GLogLevelFlags log_levels, const gchar *message, gpointer /*user_data*/)
-		{
-			std::string str = std::string(log_domain) + ": " + message;
-			if ((log_levels & (G_LOG_FLAG_RECURSION|G_LOG_FLAG_FATAL)) != 0)
-			{
-				Logger::fatal(str);
-			}
-			else if ((log_levels & (G_LOG_LEVEL_CRITICAL|G_LOG_LEVEL_ERROR)) != 0)
-			{
-				Logger::error(str);
-			}
-			else if ((log_levels & G_LOG_LEVEL_WARNING) != 0)
-			{
-				Logger::warn(str);
-			}
-			else if ((log_levels & G_LOG_LEVEL_DEBUG) != 0)
-			{
-				Logger::debug(str);
-			}
-			else
-			{
-				Logger::info(str);
-			}
-		}, nullptr);
-
-		Logger::info(SSTR << "Starting GGK server '" << pAdvertisingName << "'");
-
-		// Allocate our server
-		TheServer = std::make_shared<Server>(pServiceName, pAdvertisingName, pAdvertisingShortName, getter, setter);
+		// Use the provided server instance
+		TheServer = pServer;
 
 		// Start our server thread
 		try
@@ -493,7 +473,7 @@ int ggkStart(const char *pServiceName, const char *pAdvertisingName, const char 
 		}
 		catch(std::system_error &ex)
 		{
-			Logger::error(SSTR << "Server thread was unable to start (code " << ex.code() << ") during ggkStart(): " << ex.what());
+			Logger::error(SSTR << "Server thread was unable to start (code " << ex.code() << ") during ggkRun(): " << ex.what());
 
 			setServerRunState(EStopped);
 			return 0;
@@ -522,7 +502,7 @@ int ggkStart(const char *pServiceName, const char *pAdvertisingName, const char 
 		{
 			if (!ggkWait())
 			{
-				Logger::warn(SSTR << "Unable to stop the server after an error in ggkStart()");
+				Logger::warn(SSTR << "Unable to stop the server after an error in ggkRun()");
 			}
 
 			return 0;
@@ -534,7 +514,7 @@ int ggkStart(const char *pServiceName, const char *pAdvertisingName, const char 
 	}
 	catch(...)
 	{
-		Logger::error(SSTR << "Unknown exception during ggkStart()");
+		Logger::error(SSTR << "Unknown exception during ggkRun()");
 		return 0;
 	}
 }

@@ -17,7 +17,7 @@
 // >>>  DISCUSSION
 // >>
 //
-// The interface to Gobbledegook is rether simple. It consists of the following categories of functionality:
+// The interface to Gobbledegook is rather simple. It consists of the following categories of functionality:
 //
 //     * Logging
 //
@@ -31,7 +31,7 @@
 //
 //       In addition, the server provides a thread-safe queue for notifications of data updates to the server. Generally, the only
 //       methods an application will need to call are `ggkNofifyUpdatedCharacteristic` and `ggkNofifyUpdatedDescriptor`. The other
-//       methods are provided in case an application requies extended functionality.
+//       methods are provided in case an application requires extended functionality.
 //
 //     * Server control
 //
@@ -54,6 +54,8 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #pragma once
+
+#include <memory>
 
 #ifdef __cplusplus
 extern "C"
@@ -159,60 +161,6 @@ extern "C"
 	// SERVER CONTROL
 	// -----------------------------------------------------------------------------------------------------------------------------
 
-	// Set the server state to 'EInitializing' and then immediately create a server thread and initiate the server's async
-	// processing on the server thread.
-	//
-	// At that point the current thread will block for maxAsyncInitTimeoutMS milliseconds or until initialization completes.
-	//
-	// If initialization was successful, the method will return a non-zero value with the server running on its own thread in
-	// 'runServerThread'.
-	//
-	// If initialization was unsuccessful, this method will continue to block until the server has stopped. This method will then
-	// return 0.
-	//
-	// IMPORTANT:
-	//
-	// The data setter uses void* types to allow receipt of unknown data types from the server. Ensure that you do not store these
-	// pointers. Copy the data before returning from your getter delegate.
-	//
-	// Similarly, the pointer to data returned to the data getter should point to non-volatile memory so that the server can use it
-	// safely for an indefinite period of time.
-	//
-	// serviceName: The name of our server (collectino of services)
-	//
-	//     !!!IMPORTANT!!!
-	//
-	//     This name must match tha name configured in the D-Bus permissions. See the Readme.md file for more information.
-	//
-	//     This is used to build the path for our Bluetooth services. It also provides the base for the D-Bus owned name (see
-	//     getOwnedName.)
-	//
-	//     This value will be stored as lower-case only.
-	//
-	//     Retrieve this value using the `TheServer->getName()` method
-	//
-	// advertisingName: The name for this controller, as advertised over LE
-	//
-	//     IMPORTANT: Setting the advertisingName will change the system-wide name of the device. If that's not what you want, set
-	//     BOTH advertisingName and advertisingShortName to as empty string ("") to prevent setting the advertising
-	//     name.
-	//
-	//     Retrieve this value using the `getAdvertisingName()` method
-	//
-	// advertisingShortName: The short name for this controller, as advertised over LE
-	//
-	//     According to the spec, the short name is used in case the full name doesn't fit within Extended Inquiry Response (EIR) or
-	//     Advertising Data (AD).
-	//
-	//     IMPORTANT: Setting the advertisingName will change the system-wide name of the device. If that's not what you want, set
-	//     BOTH advertisingName and advertisingShortName to as empty string ("") to prevent setting the advertising
-	//     name.
-	//
-	//     Retrieve this value using the `getAdvertisingShortName()` method
-	//
-	int ggkStart(const char *pServiceName, const char *pAdvertisingName, const char *pAdvertisingShortName, 
-		GGKServerDataGetter getter, GGKServerDataSetter setter, int maxAsyncInitTimeoutMS);
-
 	// Blocks for up to maxAsyncInitTimeoutMS milliseconds until the server shuts down.
 	//
 	// If shutdown is successful, this method will return a non-zero value. Otherwise, it will return 0.
@@ -250,7 +198,7 @@ extern "C"
 	// Note that in some cases, a server may skip one or more states, as is the case of a failed initialization where the server
 	// will progress from EInitializing directly to EStopped.
 	//
-	// Use `ggkGetServerRunState` to retrive the state and `ggkGetServerRunStateString` to convert a `GGKServerRunState` into a
+	// Use `ggkGetServerRunState` to retrieve the state and `ggkGetServerRunStateString` to convert a `GGKServerRunState` into a
 	// human-readable string.
 	enum GGKServerRunState
 	{
@@ -301,3 +249,44 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif //__cplusplus
+
+// -----------------------------------------------------------------------------------------------------------------------------
+// NEW FUNCTIONS (C++ only, outside extern "C")
+// -----------------------------------------------------------------------------------------------------------------------------
+
+namespace ggk {
+    class Server;
+}
+
+/**
+ * Initialise the logging subsystem.
+ *
+ * This function must be called before any other GGK function, typically at the
+ * very start of your program. It sets up the internal logging infrastructure
+ * (spdlog) and configures the default log levels and sinks.
+ *
+ * After calling this, you may register custom log receivers using the
+ * ggkLogRegister* functions.
+ */
+void ggkInitLogging();
+
+/**
+ * Run the GATT server using an existing server instance.
+ *
+ * This function takes ownership of the provided Server instance (via shared_ptr),
+ * registers it with BlueZ over D-Bus, starts the main event loop, and begins
+ * advertising the configured services. It blocks until the server is fully
+ * initialised or the timeout expires.
+ *
+ * @param pServer                Shared pointer to a Server instance (or a derived class).
+ *                               Must not be null. The server should have all its
+ *                               services, characteristics and descriptors already
+ *                               described (typically in its constructor).
+ * @param maxAsyncInitTimeoutMS  Maximum time (in milliseconds) to wait for
+ *                               asynchronous initialisation to complete.
+ *
+ * @return  1 on success, 0 on failure.
+ *
+ * @see ggkInitLogging, ggkWait, ggkTriggerShutdown
+ */
+int ggkRun(std::shared_ptr<ggk::Server> pServer, int maxAsyncInitTimeoutMS);

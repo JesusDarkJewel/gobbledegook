@@ -96,8 +96,10 @@
 #include <iostream>
 #include <thread>
 #include <sstream>
+#include <memory>
 
 #include "../include/Gobbledegook.h"
+#include "Server.h"
 
 //
 // Constants
@@ -280,16 +282,20 @@ int main(int argc, char **ppArgv)
 	ggkLogRegisterAlways(LogAlways);
 	ggkLogRegisterTrace(LogTrace);
 
-	// Start the server's ascync processing
-	//
-	// This starts the server on a thread and begins the initialization process
-	//
-	// !!!IMPORTANT!!!
-	//
-	//     This first parameter (the service name) must match tha name configured in the D-Bus permissions. See the Readme.md file
-	//     for more information.
-	//
-	if (!ggkStart("gobbledegook", "Gobbledegook", "Gobbledegook", dataGetter, dataSetter, kMaxAsyncInitTimeoutMS))
+	// Initialise logging subsystem
+	ggkInitLogging();
+
+	// Create the server instance
+	auto server = std::make_shared<ggk::Server>(
+		"gobbledegook",        // service name
+		"Gobbledegook",        // advertising name
+		"Gobbledegook",        // advertising short name
+		dataGetter,
+		dataSetter
+	);
+
+	// Start the server's async processing (new)
+	if (!ggkRun(server, kMaxAsyncInitTimeoutMS))
 	{
 		return -1;
 	}
