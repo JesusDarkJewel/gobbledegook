@@ -92,7 +92,10 @@ struct Mgmt
 		EExtendedControllerInformationChangedEvent            = 0x0025
 	};
 
-	// These indices should match those in HciAdapter::kCommandCodeNames
+	// HCI command codes. For debugging purposes, the getCommandCodeName() function
+	// is used to convert a code to a human-readable string. When adding a new command
+	// to this enum, be sure to also update the getCommandCodeName() implementation
+	// with the corresponding string description.
 	enum CommandCodes
 	{
 		EInvalidCommand                                       = 0x0000,
@@ -162,7 +165,8 @@ struct Mgmt
 		EGetAdvertisingSizeInformationCommand                 = 0x0040,
 		EStartLimitedDiscoveryCommand                         = 0x0041,
 		EReadExtendedControllerInformationCommand             = 0x0042,
-		ESetAppearanceCommand                                 = 0x0043
+		ESetAppearanceCommand                                 = 0x0043,
+		ESetAdvertisingDataCommand                            = 0x2008
 	};
 
 	// Construct the Mgmt device

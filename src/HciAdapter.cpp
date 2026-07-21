@@ -57,82 +57,6 @@ namespace ggk {
 // Our event thread listens for events coming from the adapter and deals with them appropriately
 std::thread HciAdapter::eventThread;
 
-const char * const HciAdapter::kCommandCodeNames[kMaxCommandCode + 1] =
-{
-	"Invalid Command",                                   // 0x0000
-	"Read Version Information Command",                  // 0x0001
-	"Read Supported Commands Command",                   // 0x0002
-	"Read Controller Index List Command",                // 0x0003
-	"Read Controller Information Command",               // 0x0004
-	"Set Powered Command",                               // 0x0005
-	"Set Discoverable Command",                          // 0x0006
-	"Set Connectable Command",                           // 0x0007
-	"Set Fast Connectable Command",                      // 0x0008
-	"Set Bondable Command",                              // 0x0009
-	"Set Link Security Command",                         // 0x000A
-	"Set Secure Simple Pairing Command",                 // 0x000B
-	"Set High Speed Command",                            // 0x000C
-	"Set Low Energy Command",                            // 0x000D
-	"Set Device Class",                                  // 0x000E
-	"Set Local Name Command",                            // 0x000F
-	"Add UUID Command",                                  // 0x0010
-	"Remove UUID Command",                               // 0x0011
-	"Load Link Keys Command",                            // 0x0012
-	"Load Long Term Keys Command",                       // 0x0013
-	"Disconnect Command",                                // 0x0014
-	"Get Connections Command",                           // 0x0015
-	"PIN Code Reply Command",                            // 0x0016
-	"PIN Code Negative Reply Command",                   // 0x0017
-	"Set IO Capability Command",                         // 0x0018
-	"Pair Device Command",                               // 0x0019
-	"Cancel Pair Device Command",                        // 0x001A
-	"Unpair Device Command",                             // 0x001B
-	"User Confirmation Reply Command",                   // 0x001C
-	"User Confirmation Negative Reply Command",          // 0x001D
-	"User Passkey Reply Command",                        // 0x001E
-	"User Passkey Negative Reply Command",               // 0x001F
-	"Read Local Out Of Band Data Command",               // 0x0020
-	"Add Remote Out Of Band Data Command",               // 0x0021
-	"Remove Remote Out Of Band Data Command",            // 0x0022
-	"Start Discovery Command",                           // 0x0023
-	"Stop Discovery Command",                            // 0x0024
-	"Confirm Name Command",                              // 0x0025
-	"Block Device Command",                              // 0x0026
-	"Unblock Device Command",                            // 0x0027
-	"Set Device ID Command",                             // 0x0028
-	"Set Advertising Command",                           // 0x0029
-	"Set BR/EDR Command",                                // 0x002A
-	"Set Static Address Command",                        // 0x002B
-	"Set Scan Parameters Command",                       // 0x002C
-	"Set Secure Connections Command",                    // 0x002D
-	"Set Debug Keys Command",                            // 0x002E
-	"Set Privacy Command",                               // 0x002F
-	"Load Identity Resolving Keys Command",              // 0x0030
-	"Get Connection Information Command",                // 0x0031
-	"Get Clock Information Command",                     // 0x0032
-	"Add Device Command",                                // 0x0033
-	"Remove Device Command",                             // 0x0034
-	"Load Connection Parameters Command",                // 0x0035
-	"Read Unconfigured Controller Index List Command",   // 0x0036
-	"Read Controller Configuration Information Command", // 0x0037
-	"Set External Configuration Command",                // 0x0038
-	"Set Public Address Command",                        // 0x0039
-	"Start Service Discovery Command",                   // 0x003a
-	"Read Local Out Of Band Extended Data Command",      // 0x003b
-	"Read Extended Controller Index List Command",       // 0x003c
-	"Read Advertising Features Command",                 // 0x003d
-	"Add Advertising Command",                           // 0x003e
-	"Remove Advertising Command",                        // 0x003f
-	"Get Advertising Size Information Command",          // 0x0040
-	"Start Limited Discovery Command",                   // 0x0041
-	"Read Extended Controller Information Command",      // 0x0042
-	// NOTE: The documentation at https://git.kernel.org/pub/scm/bluetooth/bluez.git/tree/doc/mgmt-api.txt) states that the command
-	// code for "Set Appearance Command" is 0x0042. It also says this about the previous command in the list ("Read Extended
-	// Controller Information Command".) This is likely an error, so I'm following the order of the commands as they appear in the
-	// documentation. This makes "Set Appearance Code" have a command code of 0x0043.
-	"Set Appearance Command"                             // 0x0043
-};
-
 const char * const HciAdapter::kEventTypeNames[kMaxEventType + 1] =
 {
 	"Invalid Event",                                     // 0x0000
@@ -199,6 +123,93 @@ const char * const HciAdapter::kStatusCodes[kMaxStatusCode + 1] =
 	"Already Paired",                                    // 0x13
 	"Permission Denied",                                 // 0x14
 };
+
+const char* HciAdapter::getCommandCodeName(uint16_t code)
+{
+    switch (code)
+    {
+        case 0x0000: return "Invalid Command";
+        case 0x0001: return "Read Version Information";
+        case 0x0002: return "Read Supported Commands";
+        case 0x0003: return "Read Controller Index List";
+        case 0x0004: return "Read Controller Information";
+        case 0x0005: return "Set Powered";
+        case 0x0006: return "Set Discoverable";
+        case 0x0007: return "Set Connectable";
+        case 0x0008: return "Set Fast Connectable";
+        case 0x0009: return "Set Bondable";
+        case 0x000A: return "Set Link Security";
+        case 0x000B: return "Set Secure Simple Pairing";
+        case 0x000C: return "Set High Speed";
+        case 0x000D: return "Set Low Energy";
+        case 0x000E: return "Set Device Class";
+        case 0x000F: return "Set Local Name";
+        case 0x0010: return "Add UUID";
+        case 0x0011: return "Remove UUID";
+        case 0x0012: return "Load Link Keys";
+        case 0x0013: return "Load Long Term Keys";
+        case 0x0014: return "Disconnect";
+        case 0x0015: return "Get Connections";
+        case 0x0016: return "PIN Code Reply";
+        case 0x0017: return "PIN Code Negative Reply";
+        case 0x0018: return "Set IO Capability";
+        case 0x0019: return "Pair Device";
+        case 0x001A: return "Cancel Pair Device";
+        case 0x001B: return "Unpair Device";
+        case 0x001C: return "User Confirmation Reply";
+        case 0x001D: return "User Confirmation Negative Reply";
+        case 0x001E: return "User Passkey Reply";
+        case 0x001F: return "User Passkey Negative Reply";
+        case 0x0020: return "Read Local Out Of Band Data";
+        case 0x0021: return "Add Remote Out Of Band Data";
+        case 0x0022: return "Remove Remote Out Of Band Data";
+        case 0x0023: return "Start Discovery";
+        case 0x0024: return "Stop Discovery";
+        case 0x0025: return "Confirm Name";
+        case 0x0026: return "Block Device";
+        case 0x0027: return "Unblock Device";
+        case 0x0028: return "Set Device ID";
+        case 0x0029: return "Set Advertising";
+        case 0x002A: return "Set BR/EDR";
+        case 0x002B: return "Set Static Address";
+        case 0x002C: return "Set Scan Parameters";
+        case 0x002D: return "Set Secure Connections";
+        case 0x002E: return "Set Debug Keys";
+        case 0x002F: return "Set Privacy";
+        case 0x0030: return "Load Identity Resolving Keys";
+        case 0x0031: return "Get Connection Information";
+        case 0x0032: return "Get Clock Information";
+        case 0x0033: return "Add Device";
+        case 0x0034: return "Remove Device";
+        case 0x0035: return "Load Connection Parameters";
+        case 0x0036: return "Read Unconfigured Controller Index List";
+        case 0x0037: return "Read Controller Configuration Information";
+        case 0x0038: return "Set External Configuration";
+        case 0x0039: return "Set Public Address";
+        case 0x003A: return "Start Service Discovery";
+        case 0x003B: return "Read Local Out Of Band Extended Data";
+        case 0x003C: return "Read Extended Controller Index List";
+        case 0x003D: return "Read Advertising Features";
+        case 0x003E: return "Add Advertising";
+        case 0x003F: return "Remove Advertising";
+        case 0x0040: return "Get Advertising Size Information";
+        case 0x0041: return "Start Limited Discovery";
+        case 0x0042: return "Read Extended Controller Information";
+        // NOTE: The documentation at https://git.kernel.org/pub/scm/bluetooth/bluez.git/tree/doc/mgmt-api.txt states that the
+        // command code for "Set Appearance Command" is 0x0042. It also says this about the previous command in the list ("Read
+        // Extended Controller Information Command".) This is likely an error, so we follow the order as they appear in the
+        // documentation, making "Set Appearance" have command code 0x0043.
+        case 0x0043: return "Set Appearance";
+        case 0x2008: return "LE Set Advertising Data";
+        default:
+        {
+            // For unknown codes, return hex representation
+            static thread_local char buffer[16];
+            snprintf(buffer, sizeof(buffer), "0x%04X", code);
+            return buffer;
+        }
+    }
+}
 
 // Our thread interface, which simply launches our the thread processor on our HciAdapter instance
 void runEventThread()
@@ -541,11 +552,11 @@ bool HciAdapter::waitForCommandResponse(uint16_t commandCode, int timeoutMS)
 
 	if (!success)
 	{
-		Logger::warn(SSTR << "  + Timed out waiting on command code " << Utils::hex(commandCode) << " (" << kCommandCodeNames[commandCode] << ")");
+		Logger::warn(SSTR << "  + Timed out waiting on command code " << Utils::hex(commandCode) << " (" << getCommandCodeName(commandCode) << ")");
 	}
 	else
 	{
-		Logger::debug(SSTR << "  + Recieved the command code we were waiting for: " << Utils::hex(commandCode) << " (" << kCommandCodeNames[commandCode] << ")");
+		Logger::debug(SSTR << "  + Recieved the command code we were waiting for: " << Utils::hex(commandCode) << " (" << getCommandCodeName(commandCode) << ")");
 	}
 
 	return success;

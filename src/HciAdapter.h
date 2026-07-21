@@ -50,11 +50,6 @@ public:
 	// A constant referring to a 'non-controller' (for commands that do not require a controller index)
 	static const uint16_t kNonController = 0xffff;
 
-	// Command code names
-	static const int kMinCommandCode = 0x0001;
-	static const int kMaxCommandCode = 0x0043;
-	static const char * const kCommandCodeNames[kMaxCommandCode + 1];
-
 	// Event type names
 	static const int kMinEventType = 0x0001;
 	static const int kMaxEventType = 0x0025;
@@ -113,7 +108,7 @@ public:
 		{
 			std::string text = "";
 			text += "> Request header\n";
-			text += "  + Command code       : " + Utils::hex(code) + " (" + HciAdapter::kCommandCodeNames[code] + ")\n";
+			text += "  + Command code       : " + Utils::hex(code) + " (" + HciAdapter::getCommandCodeName(code) + ")\n";
 			text += "  + Controller Id      : " + Utils::hex(controllerId) + "\n";
 			text += "  + Data size          : " + std::to_string(dataSize) + " bytes";
 			return text;
@@ -154,7 +149,7 @@ public:
 			text += "  + Event code         : " + Utils::hex(header.code) + " (" + HciAdapter::kEventTypeNames[header.code] + ")\n";
 			text += "  + Controller Id      : " + Utils::hex(header.controllerId) + "\n";
 			text += "  + Data size          : " + std::to_string(header.dataSize) + " bytes\n";
-			text += "  + Command code       : " + Utils::hex(commandCode) + " (" + HciAdapter::kCommandCodeNames[commandCode] + ")\n";
+			text += "  + Command code       : " + Utils::hex(commandCode) + " (" + HciAdapter::getCommandCodeName(commandCode) + ")\n";
 			text += "  + Status             : " + Utils::hex(status);
 			return text;
 		}
@@ -194,7 +189,7 @@ public:
 			text += "  + Event code         : " + Utils::hex(header.code) + " (" + HciAdapter::kEventTypeNames[header.code] + ")\n";
 			text += "  + Controller Id      : " + Utils::hex(header.controllerId) + "\n";
 			text += "  + Data size          : " + std::to_string(header.dataSize) + " bytes\n";
-			text += "  + Command code       : " + Utils::hex(commandCode) + " (" + HciAdapter::kCommandCodeNames[commandCode] + ")\n";
+			text += "  + Command code       : " + Utils::hex(commandCode) + " (" + HciAdapter::getCommandCodeName(commandCode) + ")\n";
 			text += "  + Status             : " + Utils::hex(status) + " (" + HciAdapter::kStatusCodes[status] + ")";
 			return text;
 		}
@@ -472,6 +467,12 @@ public:
 	//
 	// This mehtod should not be called directly. Rather, it runs continuously on a thread until the server shuts down
 	void runEventThread();
+
+	/**
+	 * Get a human-readable name for a command code.
+	 * If the code is out of range, returns a hex string.
+	 */
+	static const char* getCommandCodeName(uint16_t code);
 
 private:
 	// Private constructor for our Singleton

@@ -129,7 +129,7 @@ bool Mgmt::setState(uint16_t commandCode, uint16_t controllerId, uint8_t newStat
 
 	if (!HciAdapter::getInstance().sendCommand(request))
 	{
-		Logger::warn(SSTR << "  + Failed to set " << HciAdapter::kCommandCodeNames[commandCode] << " state to: " << static_cast<int>(newState));
+		Logger::warn(SSTR << "  + Failed to set " << HciAdapter::getCommandCodeName(commandCode) << " state to: " << static_cast<int>(newState));
 		return false;
 	}
 
@@ -152,7 +152,7 @@ bool Mgmt::setAdvertisingData(const std::vector<uint8_t>& data)
     } __attribute__((packed));
 
     SRequest request;
-    request.code = 0x2008;
+    request.code = ESetAdvertisingDataCommand;
     request.controllerId = 0; // Primary controller (instance 0)
     // dataSize: 1 byte for length + actual data size
     request.dataSize = static_cast<uint8_t>(1 + data.size());
