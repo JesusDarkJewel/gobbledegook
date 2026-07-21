@@ -51,14 +51,14 @@ struct DBusObject;
 
 #define CHARACTERISTIC_UPDATED_VALUE_CALLBACK_LAMBDA [] \
 ( \
-	const GattCharacteristic &self, \
+	const ggk::GattCharacteristic &self, \
 	GDBusConnection *pConnection, \
 	void *pUserData \
 ) -> bool
 
 #define CHARACTERISTIC_EVENT_CALLBACK_LAMBDA [] \
 ( \
-	const GattCharacteristic &self, \
+	const ggk::GattCharacteristic &self, \
 	const TickEvent &event, \
 	GDBusConnection *pConnection, \
 	void *pUserData \
@@ -66,7 +66,7 @@ struct DBusObject;
 
 #define CHARACTERISTIC_METHOD_CALLBACK_LAMBDA [] \
 ( \
-       const GattCharacteristic &self, \
+       const ggk::GattCharacteristic &self, \
        GDBusConnection *pConnection, \
        const std::string &methodName, \
        GVariant *pParameters, \

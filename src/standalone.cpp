@@ -100,6 +100,12 @@
 
 #include "../include/Gobbledegook.h"
 #include "Server.h"
+#include "GattUuid.h"
+#include "GattService.h"
+#include "GattCharacteristic.h"
+#include "GattDescriptor.h"
+#include "Utils.h"
+#include "Globals.h"
 
 //
 // Constants
@@ -237,6 +243,88 @@ int dataSetter(const char *pName, const void *pData)
 	return 0;
 }
 
+// ---------------------------------------------------------------------------------------------------------------------------------
+// Custom server class that defines our GATT services
+// ---------------------------------------------------------------------------------------------------------------------------------
+
+class MyServer : public ggk::Server
+{
+public:
+	MyServer(const std::string &serviceName, const std::string &advertisingName,
+	         const std::string &advertisingShortName,
+	         GGKServerDataGetter getter, GGKServerDataSetter setter)
+		: ggk::Server(serviceName, advertisingName, advertisingShortName, getter, setter)
+	{}
+
+	void buildServices() override
+	{
+		// Call base implementation to add the standard Device Information service (0x180A)
+		ggk::Server::buildServices();
+
+		// Get a reference to the root object (the first object in the list)
+		auto it = objects.begin();
+		if (it == objects.end()) {
+			LogError("No root object found in MyServer::buildServices()");
+			return;
+		}
+		ggk::DBusObject &root = *it;
+
+		// Service: Battery Service (custom)
+		//
+		// This service exposes a single characteristic "level" that reports the battery level.
+		root
+			.gattServiceBegin("battery", "180F")
+				.gattCharacteristicBegin("level", "2A19", {"read", "notify"})
+					.onReadValue(CHARACTERISTIC_METHOD_CALLBACK_LAMBDA
+					{
+						self.methodReturnValue(pInvocation, serverDataBatteryLevel, true);
+					})
+					.gattDescriptorBegin("description", "2901", {"read"})
+						.onReadValue(DESCRIPTOR_METHOD_CALLBACK_LAMBDA
+						{
+							self.methodReturnValue(pInvocation, "Battery level percentage", true);
+						})
+					.gattDescriptorEnd()
+				.gattCharacteristicEnd()
+			.gattServiceEnd();
+
+		// Service: Text String Service (custom)
+		//
+		// This service exposes a single characteristic "string" that can be read and written.
+		root
+			.gattServiceBegin("text", "00000001-1E3C-FAD4-74E2-97A033F1BFAA")
+				.gattCharacteristicBegin("string", "00000002-1E3C-FAD4-74E2-97A033F1BFAA", {"read", "write", "notify"})
+					.onReadValue(CHARACTERISTIC_METHOD_CALLBACK_LAMBDA
+					{
+						self.methodReturnValue(pInvocation, serverDataTextString, true);
+					})
+					.onWriteValue(CHARACTERISTIC_METHOD_CALLBACK_LAMBDA
+					{
+						// Update the text string value
+						GVariant *pAyBuffer = g_variant_get_child_value(pParameters, 0);
+						self.setDataPointer("text/string", ggk::Utils::stringFromGVariantByteArray(pAyBuffer).c_str());
+
+						// Since all of these methods (onReadValue, onWriteValue, onUpdateValue) are all part of the same
+						// Characteristic interface (which just so happens to be the same interface passed into our self
+						// parameter) we can that parameter to call our own onUpdatedValue method
+						self.callOnUpdatedValue(pConnection, pUserData);
+
+						// Note: Even though the WriteValue method returns void, it's important to return like this, so that a
+						// dbus "method_return" is sent, otherwise the client gets an error (ATT error code 0x0e"unlikely").
+						// Only "write-without-response" works without this
+						self.methodReturnVariant(pInvocation, NULL);
+					})
+					.gattDescriptorBegin("description", "2901", {"read"})
+						.onReadValue(DESCRIPTOR_METHOD_CALLBACK_LAMBDA
+						{
+							self.methodReturnValue(pInvocation, "A mutable text string", true);
+						})
+					.gattDescriptorEnd()
+				.gattCharacteristicEnd()
+			.gattServiceEnd();
+	}
+};
+
 //
 // Entry point
 //
@@ -285,16 +373,21 @@ int main(int argc, char **ppArgv)
 	// Initialise logging subsystem
 	ggkInitLogging();
 
-	// Create the server instance
-	auto server = std::make_shared<ggk::Server>(
-		"gobbledegook",        // service name
-		"Gobbledegook",        // advertising name
-		"Gobbledegook",        // advertising short name
+	// Create the server instance using the factory method of our custom class
+	auto server = MyServer::create<MyServer>(
+		std::string{"gobbledegook"},        // service name
+		std::string{"Gobbledegook"},        // advertising name
+		std::string{"Gobbledegook"},        // advertising short name
 		dataGetter,
 		dataSetter
 	);
 
-	// Start the server's async processing (new)
+	if (!server) {
+		LogError("Failed to create server instance");
+		return -1;
+	}
+
+	// Start the server's async processing
 	if (!ggkRun(server, kMaxAsyncInitTimeoutMS))
 	{
 		return -1;

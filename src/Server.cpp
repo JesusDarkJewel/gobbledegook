@@ -216,7 +216,7 @@ std::shared_ptr<Server> TheServer = nullptr;
 //
 //     Retrieve this value using the `getAdvertisingShortName()` method.
 //
-Server::Server(const std::string &serviceName, const std::string &advertisingName, const std::string &advertisingShortName, 
+Server::Server(const std::string &serviceName, const std::string &advertisingName, const std::string &advertisingShortName,
 	GGKServerDataGetter getter, GGKServerDataSetter setter)
 {
 	// Save our names
@@ -242,20 +242,8 @@ Server::Server(const std::string &serviceName, const std::string &advertisingNam
 	//
 
 	// Create the root D-Bus object and push it into the list
+	// This is the parent object under which all GATT services will be placed.
 	objects.push_back(DBusObject(DBusObjectPath() + "com" + getServiceName()));
-
-	// We're going to build off of this object, so we need to get a reference to the instance of the object as it resides in the
-	// list (and not the object that would be added to the list.)
-	objects.back()
-
-	// Service: Device Information (0x180A)
-	//
-	// See: https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.service.device_information.xml
-	.gattServiceBegin("device", "180A")
-
-	.gattServiceEnd()
-
-	; // << -- NOTE THE SEMICOLON
 
 	//  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 	//                                                ____ _____ ___  _____
@@ -285,12 +273,10 @@ Server::Server(const std::string &serviceName, const std::string &advertisingNam
 	// which is used in the code below.
 	//  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -  -
 
-	// Create the root object and push it into the list. We're going to build off of this object, so we need to get a reference
-	// to the instance of the object as it resides in the list (and not the object that would be added to the list.)
-	//
-	// This is a non-published object (as specified by the 'false' parameter in the DBusObject constructor.) This way, we can
-	// include this within our server hieararchy (i.e., within the `objects` list) but it won't be exposed by BlueZ as a Bluetooth
-	// service to clietns.
+	// Create the Object Manager object and push it into the list.
+	// This is a non-published object (as specified by the 'false' parameter in the DBusObject constructor.)
+	// This way, we can include this within our server hierarchy (i.e., within the `objects` list) but it won't be exposed by BlueZ
+	// as a Bluetooth service to clients.
 	objects.push_back(DBusObject(DBusObjectPath(), false));
 
 	// Get a reference to the new object as it resides in the list
@@ -312,6 +298,35 @@ Server::Server(const std::string &serviceName, const std::string &advertisingNam
 	{
 		ServerUtils::getManagedObjects(pInvocation);
 	});
+}
+
+// ---------------------------------------------------------------------------------------------------------------------------------
+// Default service implementation (can be overridden by derived classes)
+// ---------------------------------------------------------------------------------------------------------------------------------
+
+void Server::buildServices()
+{
+	// Get a reference to the root object (the first object in the list)
+	// This is the parent object under which all GATT services should be placed.
+	// We use `objects.begin()` because `objects.front()` is not available for std::list in older C++.
+	auto it = objects.begin();
+	if (it == objects.end()) {
+		Logger::error("No root object found in Server::buildServices()");
+		return;
+	}
+	DBusObject &rootObject = *it;
+
+	// Service: Device Information (0x180A)
+	//
+	// See: https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.service.device_information.xml
+	rootObject
+		.gattServiceBegin("device", "180A")
+		.gattServiceEnd()
+	; // << -- NOTE THE SEMICOLON
+
+	// Additional services can be added here by derived classes.
+	// Since this is a virtual method, derived classes can call the base implementation
+	// and then add their own services, or completely replace it.
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------

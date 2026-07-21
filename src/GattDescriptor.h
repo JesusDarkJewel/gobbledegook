@@ -47,14 +47,14 @@ struct DBusObject;
 
 #define DESCRIPTOR_UPDATED_VALUE_CALLBACK_LAMBDA [] \
 ( \
-	const GattDescriptor &self, \
+	const ggk::GattDescriptor &self, \
 	GDBusConnection *pConnection, \
 	void *pUserData \
 ) -> bool
 
 #define DESCRIPTOR_EVENT_CALLBACK_LAMBDA [] \
 ( \
-	const GattDescriptor &self, \
+	const ggk::GattDescriptor &self, \
 	const TickEvent &event, \
 	GDBusConnection *pConnection, \
 	void *pUserData \
@@ -62,7 +62,7 @@ struct DBusObject;
 
 #define DESCRIPTOR_METHOD_CALLBACK_LAMBDA [] \
 ( \
-       const GattDescriptor &self, \
+       const ggk::GattDescriptor &self, \
        GDBusConnection *pConnection, \
        const std::string &methodName, \
        GVariant *pParameters, \

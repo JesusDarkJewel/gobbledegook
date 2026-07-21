@@ -158,8 +158,26 @@ struct Server
 	//
 	//     Retrieve this value using the `getAdvertisingShortName()` method.
 	//
-	Server(const std::string &serviceName, const std::string &advertisingName, const std::string &advertisingShortName, 
+	// Note: Constructor is protected to enforce use of the create() factory method,
+	// which ensures virtual methods are called polymorphically.
+protected:
+	Server(const std::string &serviceName, const std::string &advertisingName, const std::string &advertisingShortName,
 		GGKServerDataGetter getter, GGKServerDataSetter setter);
+
+public:
+	// Virtual destructor for proper cleanup of derived classes
+	virtual ~Server() = default;
+
+	// Static factory method to create a server instance (or derived class).
+	// This ensures that buildServices() is called after the object is fully constructed,
+	// allowing polymorphic behavior.
+	template<typename T, typename... Args>
+	static std::shared_ptr<T> create(Args&&... args)
+	{
+		auto ptr = std::shared_ptr<T>(new T(std::forward<Args>(args)...));
+		ptr->buildServices();
+		return ptr;
+	}
 
 	//
 	// Utilitarian
@@ -180,11 +198,17 @@ struct Server
 	// If the property was found, it is returned, otherwise nullptr is returned
 	const GattProperty *findProperty(const DBusObjectPath &objectPath, const std::string &interfaceName, const std::string &propertyName) const;
 
-private:
+	// Virtual method to build the GATT services, characteristics and descriptors.
+	// This is called by the factory method after construction.
+	// Derived classes should override this to define their own services.
+	// The default implementation provides a basic Device Information service (0x180A).
+	virtual void buildServices();
 
-	// Our server's objects
+protected:
+	// Our server's objects (protected so derived classes can add their own objects)
 	Objects objects;
 
+private:
 	// BR/EDR requested state
 	bool enableBREDR;
 
