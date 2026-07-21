@@ -136,6 +136,42 @@ bool Mgmt::setState(uint16_t commandCode, uint16_t controllerId, uint8_t newStat
 	return true;
 }
 
+bool Mgmt::setAdvertisingData(const std::vector<uint8_t>& data)
+{
+    // Maximum advertising data length per Bluetooth specification
+    if (data.size() > 31) {
+        Logger::error("Advertising data exceeds 31 bytes");
+        return false;
+    }
+
+    // HCI command: LE Set Advertising Data (OGF 0x08, OCF 0x0008)
+    // Opcode = (OGF << 10) | OCF = (0x08 << 10) | 0x0008 = 0x2008
+    struct SRequest : HciAdapter::HciHeader
+    {
+        uint8_t advertisingData[31]; // Max 31 bytes of data
+    } __attribute__((packed));
+
+    SRequest request;
+    request.code = 0x2008;
+    request.controllerId = 0; // Primary controller (instance 0)
+    // dataSize: 1 byte for length + actual data size
+    request.dataSize = static_cast<uint8_t>(1 + data.size());
+
+    // First byte is the length of the data (as per HCI spec)
+    request.advertisingData[0] = static_cast<uint8_t>(data.size());
+    // Copy the actual data after the length byte
+    if (!data.empty()) {
+        memcpy(&request.advertisingData[1], data.data(), data.size());
+    }
+
+    if (!HciAdapter::getInstance().sendCommand(request)) {
+        Logger::error("Failed to send LE Set Advertising Data command");
+        return false;
+    }
+
+    return true;
+}
+
 // Set the powered state to `newState` (true = powered on, false = powered off)
 //
 // Returns true on success, otherwise false

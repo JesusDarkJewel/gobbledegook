@@ -363,7 +363,7 @@ void HciAdapter::runEventThread()
 				}
 				else
 				{
-					Logger::error("Invalid event type response: " + Utils::hex(eventCode));					
+					Logger::error("Invalid event type response: " + Utils::hex(eventCode));
 				}
 			}
 		}

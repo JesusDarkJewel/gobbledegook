@@ -194,6 +194,14 @@ struct Mgmt
 	// Returns true on success, otherwise false
 	bool setState(uint16_t commandCode, uint16_t controllerId, uint8_t newState);
 
+	/**
+	 * Set the advertising data (AD) for the primary advertising instance.
+	 * Uses HCI command LE Set Advertising Data (OGF 0x08, OCF 0x0008).
+	 * @param data  Vector of bytes containing the AD structures (max 31 bytes)
+	 * @return true on success, false on failure
+	 */
+	bool setAdvertisingData(const std::vector<uint8_t>& data);
+
 	// Set the powered state to `newState` (true = powered on, false = powered off)
 	//
 	// Returns true on success, otherwise false
