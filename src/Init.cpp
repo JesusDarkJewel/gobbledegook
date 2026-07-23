@@ -669,6 +669,8 @@ void registerObjects()
 // See also: https://git.kernel.org/pub/scm/bluetooth/bluez.git/tree/doc/mgmt-api.txt
 void configureAdapter()
 {
+	Logger::debug("JESUS configureAdapter CALL");
+
 	Mgmt mgmt;
 
 	// Get our properly truncated advertising names
@@ -688,24 +690,28 @@ void configureAdapter()
 	bool diFlag = info.currentSettings.isSet(HciAdapter::EHciDiscoverable) == TheServer->getEnableDiscoverable();
 	bool adFlag = info.currentSettings.isSet(HciAdapter::EHciAdvertising) == TheServer->getEnableAdvertising();
 	bool anFlag = (advertisingName.length() == 0 || advertisingName == info.name) && (advertisingShortName.length() == 0 || advertisingShortName == info.shortName);
+	bool adDataFlag = HciAdapter::getInstance().getAdvertisingData() == TheServer->getAdvertisingData();
+
+	Logger::debug(SSTR << "JESUS " << __LINE__ << " pwFlag[" << pwFlag << "] leFlag[" << leFlag << "] brFlag[" << brFlag << "] scFlag[" << scFlag << "] bnFlag[" << bnFlag << "] cnFlag[" << cnFlag << "] diFlag[" << diFlag << "] adFlag[" << adFlag << "] anFlag[" << anFlag << "] adDataFlag[" << adDataFlag << "]");
 
 	// If everything is setup already, we're done
-	if (!pwFlag || !leFlag || !brFlag || !scFlag || !bnFlag || !cnFlag || !diFlag || !adFlag || !anFlag)
+	if (!pwFlag || !leFlag || !brFlag || !scFlag || !bnFlag || !cnFlag || !diFlag || !adFlag || !anFlag || !adDataFlag)
 	{
+		Logger::debug(SSTR << "JESUS " << __LINE__);
 		// We need it off to start with
 		if (pwFlag)
 		{
 			Logger::debug("Powering off");
 			if (!mgmt.setPowered(false)) { setRetry(); return; }
 		}
-
+		Logger::debug(SSTR << "JESUS " << __LINE__);
 		// Enable the LE state (we always set this state if it's not set)
 		if (!leFlag)
 		{
 			Logger::debug("Enabling LE");
 			if (!mgmt.setLE(true)) { setRetry(); return; }
 		}
-
+		Logger::debug(SSTR << "JESUS " << __LINE__);
 		// Change the Br/Edr state?
 		//
 		// Note that enabling this requries LE to already be enabled or this command will receive a 'rejected' result
@@ -714,54 +720,62 @@ void configureAdapter()
 			Logger::debug(SSTR << (TheServer->getEnableBREDR() ? "Enabling":"Disabling") << " BR/EDR");
 			if (!mgmt.setBredr(TheServer->getEnableBREDR())) { setRetry(); return; }
 		}
-
+		Logger::debug(SSTR << "JESUS " << __LINE__);
 		// Change the Secure Connectinos state?
 		if (!scFlag)
 		{
 			Logger::debug(SSTR << (TheServer->getEnableSecureConnection() ? "Enabling":"Disabling") << " Secure Connections");
 			if (!mgmt.setSecureConnections(TheServer->getEnableSecureConnection() ? 1 : 0)) { setRetry(); return; }
 		}
-
+		Logger::debug(SSTR << "JESUS " << __LINE__);
 		// Change the Bondable state?
 		if (!bnFlag)
 		{
 			Logger::debug(SSTR << (TheServer->getEnableBondable() ? "Enabling":"Disabling") << " Bondable");
 			if (!mgmt.setBondable(TheServer->getEnableBondable())) { setRetry(); return; }
 		}
-
+		Logger::debug(SSTR << "JESUS " << __LINE__);
 		// Change the Connectable state?
 		if (!cnFlag)
 		{
 			Logger::debug(SSTR << (TheServer->getEnableConnectable() ? "Enabling":"Disabling") << " Connectable");
 			if (!mgmt.setConnectable(TheServer->getEnableConnectable())) { setRetry(); return; }
 		}
-
+		Logger::debug(SSTR << "JESUS " << __LINE__);
 		// Change the Discoverable state?
 		if (!diFlag)
 		{
 			Logger::debug(SSTR << (TheServer->getEnableDiscoverable() ? "Enabling":"Disabling") << " Discoverable");
 			if (!mgmt.setDiscoverable(TheServer->getEnableDiscoverable() ? 1 : 0, 0)) { setRetry(); return; }
 		}
-
+		Logger::debug(SSTR << "JESUS " << __LINE__);
 		// Change the Advertising state?
 		if (!adFlag)
 		{
 			Logger::debug(SSTR << (TheServer->getEnableAdvertising() ? "Enabling":"Disabling") << " Advertising");
 			if (!mgmt.setAdvertising(TheServer->getEnableAdvertising() ? 1 : 0)) { setRetry(); return; }
 		}
-
+		Logger::debug(SSTR << "JESUS " << __LINE__);
 		// Set the name?
 		if (!anFlag)
 		{
 			Logger::info(SSTR << "Setting advertising name to '" << advertisingName << "' (with short name: '" << advertisingShortName << "')");
 			if (!mgmt.setName(advertisingName.c_str(), advertisingShortName.c_str())) { setRetry(); return; }
 		}
-
 		// Turn it back on
 		Logger::debug("Powering on");
 		if (!mgmt.setPowered(true)) { setRetry(); return; }
-	}
 
+		Logger::debug(SSTR << "JESUS " << __LINE__);
+		// Set the advertising data
+		if (!adDataFlag)
+		{
+			Logger::info(SSTR << "JESUS Setting advertising data to '" << Utils::hex(TheServer->getAdvertisingData()) << "'");
+			if (!mgmt.setAdvertisingData(TheServer->getAdvertisingData())) { setRetry(); return; }
+		}
+		Logger::debug(SSTR << "JESUS " << __LINE__);
+	}
+	Logger::debug(SSTR << "JESUS " << __LINE__);
 	Logger::info("The Bluetooth adapter is fully configured");
 
 	// We're all set, nothing to do!

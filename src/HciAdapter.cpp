@@ -245,6 +245,8 @@ void HciAdapter::runEventThread()
 		// Our response, as a usable object type
 		uint16_t eventCode = Utils::endianToHost(*reinterpret_cast<uint16_t *>(responsePacket.data()));
 
+		Logger::debug(SSTR << "JESUS: Received event code: " << Utils::hex(eventCode) << " size: " << responsePacket.size() << " bytes");
+
 		// Ensure our event code is valid
 		if (eventCode < HciAdapter::kMinEventType || eventCode > HciAdapter::kMaxEventType)
 		{

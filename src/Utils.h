@@ -81,6 +81,8 @@ struct Utils
 	// A full hex-dump of binary data (with accompanying ASCII output)
 	static std::string hex(const uint8_t *pData, int count);
 
+	static std::string hex(const std::vector<uint8_t>& data);
+
 	// Returns a peoperly formatted Bluetooth address from a set of six octets stored at `pAddress`
 	//
 	// USE WITH CAUTION: It is expected that pAddress point to an array of 6 bytes. The length of the array cannot be validated and

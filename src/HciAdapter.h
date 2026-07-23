@@ -427,6 +427,7 @@ public:
 	VersionInformation getVersionInformation() { return versionInformation; }
 	LocalName getLocalName() { return localName; }
 	int getActiveConnectionCount() { return activeConnections; }
+	const std::vector<uint8_t>& getAdvertisingData() { return advertisingData; }
 
 	//
 	// Disallow copies of our singleton (c++11)
@@ -504,6 +505,8 @@ private:
 	std::mutex commandResponseMutex;
 	std::unique_lock<std::mutex> commandResponseLock;
 	int conditionalValue;
+
+	std::vector<uint8_t> advertisingData;
 
 	// Our active connection count
 	int activeConnections;

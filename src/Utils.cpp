@@ -188,6 +188,10 @@ std::string Utils::hex(const uint8_t *pData, int count)
 	return result;
 }
 
+std::string Utils::hex(const std::vector<uint8_t>& data) {
+	return hex(data.data(), static_cast<int>(data.size()));
+}
+
 // Returns a peoperly formatted Bluetooth address from a set of six octets stored at `pAddress`
 //
 // USE WITH CAUTION: It is expected that pAddress point to an array of 6 bytes. The length of the array cannot be validated and
@@ -198,7 +202,7 @@ std::string Utils::hex(const uint8_t *pData, int count)
 std::string Utils::bluetoothAddressString(uint8_t *pAddress)
 {
 	char hex[32];
-	snprintf(hex, sizeof(hex), "%02X:%02X:%02X:%02X:%02X:%02X", 
+	snprintf(hex, sizeof(hex), "%02X:%02X:%02X:%02X:%02X:%02X",
 		pAddress[0], pAddress[1], pAddress[2], pAddress[3], pAddress[4], pAddress[5]);
 	return hex;
 }

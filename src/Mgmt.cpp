@@ -136,41 +136,166 @@ bool Mgmt::setState(uint16_t commandCode, uint16_t controllerId, uint8_t newStat
 	return true;
 }
 
-bool Mgmt::setAdvertisingData(const std::vector<uint8_t>& data)
+// bool Mgmt::addAdvertisingTemp()
+// {
+//     struct SRequest : HciAdapter::HciHeader
+//     {
+//         uint8_t ttt[16];
+//     } __attribute__((packed));
+
+//     SRequest request;
+//     request.code = Mgmt::EAddAdvertisingCommand;
+//     request.controllerId = 0;
+//     request.dataSize = sizeof(SRequest) - sizeof(HciAdapter::HciHeader);
+
+//     // Hardcoded packet: instance=1, flags=0x01, duration=0, timeout=0,
+//     // adLen=5, scanRspLen=0, adData=04 FF FF FF 00
+//     // This matches the successful test: 3E 00 00 00 10 00 01 01 00 00 00 00 00 00 00 05 00 04 FF FF FF 00
+//     static const uint8_t raw[] = {0x01,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x05,0x00,0x04,0xFF,0xFF,0xFF,0x00};
+//     memcpy(request.ttt, raw, sizeof(raw));
+
+//     if (!HciAdapter::getInstance().sendCommand(request)) {
+//         Logger::error("Failed to send Add Advertising (temp) command");
+//         return false;
+//     }
+//     return true;
+// }
+
+bool Mgmt::addAdvertising(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse)
 {
-    // Maximum advertising data length per Bluetooth specification
-    if (data.size() > 31) {
-        Logger::error("Advertising data exceeds 31 bytes");
+    if (adData.size() > 31 || scanResponse.size() > 31) {
+        Logger::error("AD or Scan Response data exceeds 31 bytes");
         return false;
     }
 
-    // HCI command: LE Set Advertising Data (OGF 0x08, OCF 0x0008)
-    // Opcode = (OGF << 10) | OCF = (0x08 << 10) | 0x0008 = 0x2008
-    struct SRequest : HciAdapter::HciHeader
+    // Fixed part of the MGMT_OP_ADD_ADVERTISING parameters
+    struct SRequestHeader : HciAdapter::HciHeader
     {
-        uint8_t advertisingData[31]; // Max 31 bytes of data
+        uint8_t instanceId;
+        uint8_t flags[4];
+        uint16_t duration;
+        uint16_t timeout;
+        uint8_t adLen;
+        uint8_t scanRspLen;
+    } __attribute__((packed));
+
+    // Full structure with variable data (AD + Scan Response)
+    struct SRequest : SRequestHeader
+    {
+        uint8_t data[62]; // maximum 31+31 bytes
     } __attribute__((packed));
 
     SRequest request;
-    request.code = ESetAdvertisingDataCommand;
-    request.controllerId = 0; // Primary controller (instance 0)
-    // dataSize: 1 byte for length + actual data size
-    request.dataSize = static_cast<uint8_t>(1 + data.size());
+    request.code = Mgmt::EAddAdvertisingCommand;
+    request.controllerId = 0; // primary controller (hci0)
 
-    // First byte is the length of the data (as per HCI spec)
-    request.advertisingData[0] = static_cast<uint8_t>(data.size());
-    // Copy the actual data after the length byte
-    if (!data.empty()) {
-        memcpy(&request.advertisingData[1], data.data(), data.size());
-    }
+    // Parameter size = size of fixed part (without HciHeader) + actual data length
+    request.dataSize = sizeof(SRequestHeader) - sizeof(HciAdapter::HciHeader) + adData.size() + scanResponse.size();
+
+    // Fill fixed fields
+    request.instanceId = 1; // fixed instance ID (can be made configurable)
+    memset(request.flags, 0, 4); // no flags (0x01=connectable, 0x02=discoverable, etc.)
+		request.flags[0] |= 0x01; // Set connectable flag
+		request.flags[0] |= 0x02; // Set discoverable flag
+    request.duration = 0;    // infinite
+    request.timeout = 0;     // no timeout
+    request.adLen = static_cast<uint8_t>(adData.size());
+    request.scanRspLen = static_cast<uint8_t>(scanResponse.size());
+
+    // Copy data sequentially: first AD data, then Scan Response data
+    uint8_t* p = request.data;
+    memcpy(p, adData.data(), adData.size());
+    p += adData.size();
+    memcpy(p, scanResponse.data(), scanResponse.size());
 
     if (!HciAdapter::getInstance().sendCommand(request)) {
-        Logger::error("Failed to send LE Set Advertising Data command");
+        Logger::error("Failed to send Add Advertising command");
+        return false;
+    }
+    return true;
+}
+
+bool Mgmt::removeAdvertising()
+{
+    struct SRequest : HciAdapter::HciHeader
+    {
+        uint8_t instanceId;
+    } __attribute__((packed));
+
+    SRequest request;
+    request.code = Mgmt::ERemoveAdvertisingCommand;
+    request.controllerId = 0;
+    request.dataSize = sizeof(SRequest) - sizeof(HciAdapter::HciHeader);
+    request.instanceId = advertiseInstanceId;
+
+    if (!HciAdapter::getInstance().sendCommand(request)) {
+        // It's okay if the instance didn't exist – we just log a debug message
+        Logger::debug(SSTR << "Remove Advertising (instance " << (int)advertiseInstanceId << ") failed (probably not present)");
+        return false;
+    }
+    return true;
+}
+
+
+bool Mgmt::setAdvertisingData(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse)
+{
+    // Remove any existing instance with this ID (ignore failure)
+    removeAdvertising();
+
+    // Add the new instance
+    if (!addAdvertising(adData, scanResponse)) {
+        Logger::error("Failed to add new advertising instance");
         return false;
     }
 
+    // Enable advertising if it's not already enabled (optional, but we do it here)
+    // Note: This is already handled by configureAdapter, but can be called here for safety.
+    // To avoid duplication, we might skip this and rely on the global adFlag in configureAdapter.
+    // But for direct updates, we should enable it.
+    setAdvertising(1); // enable advertising for instance 0? Actually, setAdvertising toggles global advertising.
+    // We need to set the advertising flag to 1 to start advertising.
+    // However, setAdvertising(1) will enable advertising globally. Since we have an instance,
+    // it will advertise that instance.
+
     return true;
 }
+
+// bool Mgmt::setAdvertisingData(const std::vector<uint8_t>& data)
+// {
+// 	Logger::info("JESUS Setting advertising data");
+// 	// Maximum advertising data length per Bluetooth specification
+// 	if (data.size() > 31) {
+// 		Logger::error("Advertising data exceeds 31 bytes");
+// 		return false;
+// 	}
+
+// 	// HCI command: LE Set Advertising Data (OGF 0x08, OCF 0x0008)
+// 	// Opcode = (OGF << 10) | OCF = (0x08 << 10) | 0x0008 = 0x2008
+// 	struct SRequest : HciAdapter::HciHeader
+// 	{
+// 		uint8_t advertisingData[31]; // Max 31 bytes of data
+// 	} __attribute__((packed));
+
+// 	SRequest request;
+// 	request.code = ESetAdvertisingDataCommand;
+// 	request.controllerId = 0; // Primary controller (instance 0)
+// 	// dataSize: 1 byte for length + actual data size
+// 	request.dataSize = static_cast<uint8_t>(1 + data.size());
+
+// 	// First byte is the length of the data (as per HCI spec)
+// 	request.advertisingData[0] = static_cast<uint8_t>(data.size());
+// 	// Copy the actual data after the length byte
+// 	if (!data.empty()) {
+// 		memcpy(&request.advertisingData[1], data.data(), data.size());
+// 	}
+
+// 	if (!HciAdapter::getInstance().sendCommand(request)) {
+// 		Logger::error("Failed to send LE Set Advertising Data command");
+// 		return false;
+// 	}
+
+// 	return true;
+// }
 
 // Set the powered state to `newState` (true = powered on, false = powered off)
 //

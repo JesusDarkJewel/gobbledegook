@@ -327,6 +327,24 @@ void Server::buildServices()
 	// Additional services can be added here by derived classes.
 	// Since this is a virtual method, derived classes can call the base implementation
 	// and then add their own services, or completely replace it.
+
+	// Build custom advertising data (e.g., iBeacon)
+	std::vector<uint8_t> ad;
+	// Flags (type 0x01)
+	ad.push_back(2); // length
+	ad.push_back(0x01); // type
+	ad.push_back(0x04); // LE only
+	// Complete Local Name (type 0x09)
+	std::string name = getAdvertisingName();
+	if (!name.empty()) {
+			ad.push_back(static_cast<uint8_t>(name.length() + 1));
+			ad.push_back(0x09);
+			ad.insert(ad.end(), name.begin(), name.end());
+	}
+	// Manufacturer Specific Data (type 0xFF) for iBeacon
+	// ... etc.
+	setAdvertisingData(ad);
+
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------

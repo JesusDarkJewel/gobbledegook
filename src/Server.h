@@ -204,6 +204,11 @@ public:
 	// The default implementation provides a basic Device Information service (0x180A).
 	virtual void buildServices();
 
+	// Set custom advertising data (complete AD buffer, including all AD structures)
+	void setAdvertisingData(const std::vector<uint8_t>& data) { advertisingData = data; }
+	// Get current advertising data (may be empty if not set)
+	const std::vector<uint8_t>& getAdvertisingData() const { return advertisingData; }
+
 protected:
 	// Our server's objects (protected so derived classes can add their own objects)
 	Objects objects;
@@ -261,6 +266,8 @@ private:
 	// This is used to build the path for our Bluetooth services (and we'll go ahead and use it as the owned name as well for
 	// consistency.)
 	std::string serviceName;
+
+	std::vector<uint8_t> advertisingData;
 };
 
 // Our one and only server. It's a global.

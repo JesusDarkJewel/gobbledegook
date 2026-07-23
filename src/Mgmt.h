@@ -199,12 +199,14 @@ struct Mgmt
 	bool setState(uint16_t commandCode, uint16_t controllerId, uint8_t newState);
 
 	/**
-	 * Set the advertising data (AD) for the primary advertising instance.
-	 * Uses HCI command LE Set Advertising Data (OGF 0x08, OCF 0x0008).
-	 * @param data  Vector of bytes containing the AD structures (max 31 bytes)
-	 * @return true on success, false on failure
+	 * Update advertising data for a fixed instance ID.
+	 * This method removes any existing instance with the given ID and adds a new one.
+	 * The instance ID is taken from HciAdapter::getAdvertisingInstanceId().
+	 * @param adData       New Advertising Data.
+	 * @param scanResponse New Scan Response Data (optional).
+	 * @return true on success, false on failure.
 	 */
-	bool setAdvertisingData(const std::vector<uint8_t>& data);
+	bool setAdvertisingData(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse = {});
 
 	// Set the powered state to `newState` (true = powered on, false = powered off)
 	//
@@ -256,9 +258,25 @@ struct Mgmt
 
 private:
 
+	/**
+	 * Add a new advertising instance with given data.
+	 * @param adData       Advertising Data (max 31 bytes).
+	 * @param scanResponse Scan Response Data (max 31 bytes, optional).
+	 * @return true on success, false on failure.
+	 */
+	bool addAdvertising(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse = {});
+
+	/**
+	 * Remove an advertising instance.
+	 * @return true on success, false on failure (e.g., instance not found).
+	 */
+	bool removeAdvertising();
+
 	//
 	// Data members
 	//
+
+	static const uint8_t advertiseInstanceId = 1;  // The advertising instance ID for the primary advertising instance
 
 	// The default controller index (the first device)
 	uint16_t controllerIndex;
