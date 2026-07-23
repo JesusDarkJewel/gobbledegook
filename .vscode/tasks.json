@@ -10,6 +10,17 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Build ggk library",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                ".vscode/build.sh",
+                "${workspaceFolder}"
+            ],
+            "group": "build",
+            "problemMatcher": ["$gcc"]
         }
     ]
 }
