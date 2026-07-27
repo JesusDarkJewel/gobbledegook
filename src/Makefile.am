@@ -1,6 +1,6 @@
 # Build a static library (libggk.a)
 noinst_LIBRARIES = libggk.a
-libggk_a_CXXFLAGS = -fPIC -Wall -Wextra -std=c++11 $(GLIB_CFLAGS) $(GIO_CFLAGS) $(GOBJECT_CFLAGS)
+libggk_a_CXXFLAGS = -fPIC -Wall -Wextra -std=c++23 $(GLIB_CFLAGS) $(GIO_CFLAGS) $(GOBJECT_CFLAGS)
 libggk_a_SOURCES = DBusInterface.cpp \
                    DBusInterface.h \
                    DBusMethod.cpp \
@@ -41,7 +41,7 @@ libggk_a_SOURCES = DBusInterface.cpp \
                    Utils.cpp \
                    Utils.h
 # Build our standalone server (linking statically with libggk.a, linking dynamically with GLib)
-standalone_CXXFLAGS = -fPIC -Wall -Wextra -std=c++11 $(GLIB_CFLAGS) $(GIO_CFLAGS) $(GOBJECT_CFLAGS)
+standalone_CXXFLAGS = -fPIC -Wall -Wextra -std=c++23 $(GLIB_CFLAGS) $(GIO_CFLAGS) $(GOBJECT_CFLAGS)
 noinst_PROGRAMS = standalone
 standalone_SOURCES = standalone.cpp
 standalone_LDADD = libggk.a

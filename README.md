@@ -84,7 +84,7 @@ You may also have noticed that we're using lambdas to include our implementation
 
 >#### *Side note*
 >
->A compiled GGK library provides a public interface that is compatible with standard C, but you'll need a modern compiler to build a GGK library because the internals are written using features of c++11.
+>A compiled GGK library provides a public interface that is compatible with standard C, but you'll need a modern compiler with C++23 support to build a GGK library.
 
 Let's take a look at a more complex example. Here's an implementation of the Bluetooth standard's [Current Time Service](https://www.bluetooth.com/specifications/gatt/viewer?attributeXmlFile=org.bluetooth.service.current_time.xml). We'll even toss a few extras in to keep things interesting:
 

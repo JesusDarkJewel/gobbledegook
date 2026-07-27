@@ -6,9 +6,23 @@ AC_CHECK_LIB([pthread], pthread_create, [], [AC_MSG_ERROR([pthread library not f
 AC_CHECK_LIB([glib-2.0], g_variant_new, [], [AC_MSG_ERROR([glib-2.0 library not found])])
 AC_CHECK_LIB([gio-2.0], g_dbus_method_invocation_return_dbus_error, [], [AC_MSG_ERROR([gio-2.0 library not found])])
 AC_CHECK_LIB([gobject-2.0], g_object_unref, [], [AC_MSG_ERROR([gobject-2.0 library not found])])
-AX_CXX_COMPILE_STDCXX(11)
-AC_PROG_RANLIB
 AC_PROG_CXX
+AC_LANG_PUSH([C++])
+ggk_saved_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$CXXFLAGS -std=c++23"
+AC_MSG_CHECKING([whether $CXX supports C++23])
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM(
+    [[#if __cplusplus <= 202002L
+      #error C++23 support is required
+      #endif]],
+    [[]])],
+  [AC_MSG_RESULT([yes])],
+  [AC_MSG_RESULT([no])
+   AC_MSG_ERROR([a compiler with C++23 support is required])])
+CXXFLAGS="$ggk_saved_CXXFLAGS"
+AC_LANG_POP([C++])
+AC_PROG_RANLIB
 AM_PROG_AR
 
 AC_SUBST(GLIB_CFLAGS)

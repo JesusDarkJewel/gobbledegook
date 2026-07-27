@@ -223,7 +223,7 @@ int main()
 TC="$HOME/opt/x-tools/armv6-rpi-linux-gnueabihf/bin/armv6-rpi-linux-gnueabihf"
 
 "${TC}-g++" \
-  -std=c++11 \
+  -std=c++23 \
   -pthread \
   -no-pie \
   tls-smoke.cpp \
@@ -375,7 +375,7 @@ TC="$HOME/opt/x-tools/armv6-rpi-linux-gnueabihf/bin/armv6-rpi-linux-gnueabihf"
 "${TC}-g++" \
   -g \
   -O2 \
-  -std=c++11 \
+  -std=c++23 \
   -pthread \
   -no-pie \
   -I/mnt/c/Projects/BusOTS_Experiments/includes \

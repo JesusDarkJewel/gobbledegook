@@ -55,7 +55,7 @@ trap cleanup EXIT
 "$cxx" --version | head -n 1
 
 "$cxx" \
-    -std=c++11 -pthread -no-pie \
+    -std=c++23 -pthread -no-pie \
     "$ws/.vscode/tls-smoke.cpp" \
     -o "$ws/tls-smoke-armv6"
 
@@ -69,7 +69,7 @@ for file in "${files[@]}"; do
     object="${file%.cpp}.o"
     "$cxx" -c \
         -DHAVE_CONFIG_H \
-        -fPIC -Wall -Wextra -std=c++11 \
+        -fPIC -Wall -Wextra -std=c++23 \
         -I"$ws/includes/" \
         -I"$ws/includes/glib-2.0" \
         -I"$ws/includes/dbus-1.0/include" \
@@ -90,7 +90,7 @@ if "$nm" ../libggk.a |
 fi
 
 "$cxx" \
-    -g -O2 -std=c++11 -fPIC -pthread -no-pie \
+    -g -O2 -std=c++23 -fPIC -pthread -no-pie \
     -DHAVE_CONFIG_H \
     -I"$ws/include" \
     -I"$ws/src" \
