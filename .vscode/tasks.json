@@ -12,12 +12,14 @@
             }
         },
         {
-            "label": "Build ggk library",
-            "type": "shell",
-            "command": "bash",
+            "label": "Build ggk (WSL)",
+            "type": "process",
+            "command": "wsl.exe",
             "args": [
-                ".vscode/build.sh",
-                "${workspaceFolder}"
+                "--cd",
+                "${workspaceFolder}",
+                "bash",
+                ".vscode/build.sh"
             ],
             "group": "build",
             "problemMatcher": ["$gcc"]
