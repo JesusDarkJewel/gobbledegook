@@ -30,6 +30,7 @@
 #include <vector>
 #include <list>
 #include <memory>
+#include <mutex>
 
 #include "../include/Gobbledegook.h"
 #include "DBusObject.h"
@@ -205,9 +206,9 @@ public:
 	virtual void buildServices();
 
 	// Set custom advertising data (complete AD buffer, including all AD structures)
-	void setAdvertisingData(const std::vector<uint8_t>& data) { advertisingData = data; }
+	void setAdvertisingData(const std::vector<uint8_t>& data);
 	// Get current advertising data (may be empty if not set)
-	const std::vector<uint8_t>& getAdvertisingData() const { return advertisingData; }
+	std::vector<uint8_t> getAdvertisingData() const;
 
 protected:
 	// Our server's objects (protected so derived classes can add their own objects)
@@ -267,6 +268,7 @@ private:
 	// consistency.)
 	std::string serviceName;
 
+	mutable std::mutex advertisingDataMutex;
 	std::vector<uint8_t> advertisingData;
 };
 

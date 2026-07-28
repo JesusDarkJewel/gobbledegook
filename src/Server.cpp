@@ -347,6 +347,31 @@ void Server::buildServices()
 
 }
 
+void Server::setAdvertisingData(const std::vector<uint8_t> &data)
+{
+	{
+		std::lock_guard<std::mutex> lock(advertisingDataMutex);
+		if (advertisingData == data)
+		{
+			return;
+		}
+		advertisingData = data;
+	}
+
+	// Runtime changes are serialized through the GGK main loop. During server
+	// construction the initial value is applied by configureAdapter().
+	if (ggkGetServerRunState() == ERunning)
+	{
+		ggkPushUpdateQueue("/", "org.gobbledegook.Advertisement");
+	}
+}
+
+std::vector<uint8_t> Server::getAdvertisingData() const
+{
+	std::lock_guard<std::mutex> lock(advertisingDataMutex);
+	return advertisingData;
+}
+
 // ---------------------------------------------------------------------------------------------------------------------------------
 // Utilitarian
 // ---------------------------------------------------------------------------------------------------------------------------------

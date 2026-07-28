@@ -153,8 +153,21 @@ bool idleFunc(void *pUserData)
 		return false;
 	}
 
-	DBusObjectPath objectPath = DBusObjectPath(entryString.substr(0, token));
 	std::string interfaceName = entryString.substr(token+1);
+
+	if (interfaceName == "org.gobbledegook.Advertisement")
+	{
+		const std::vector<uint8_t> advertisingData = TheServer->getAdvertisingData();
+		Logger::info(SSTR << "Updating advertising data to '" << Utils::hex(advertisingData) << "'");
+		static Mgmt mgmt;
+		if (!mgmt.setAdvertisingData(advertisingData))
+		{
+			Logger::error("Unable to update advertising data");
+		}
+		return true;
+	}
+
+	DBusObjectPath objectPath = DBusObjectPath(entryString.substr(0, token));
 
 	// We have an update - call the onUpdatedValue method on the interface
 	std::shared_ptr<const DBusInterface> pInterface = TheServer->findInterface(objectPath, interfaceName);
@@ -688,9 +701,12 @@ void configureAdapter()
 	bool bnFlag = info.currentSettings.isSet(HciAdapter::EHciBondable) == TheServer->getEnableBondable();
 	bool cnFlag = info.currentSettings.isSet(HciAdapter::EHciConnectable) == TheServer->getEnableConnectable();
 	bool diFlag = info.currentSettings.isSet(HciAdapter::EHciDiscoverable) == TheServer->getEnableDiscoverable();
-	bool adFlag = info.currentSettings.isSet(HciAdapter::EHciAdvertising) == TheServer->getEnableAdvertising();
+	const std::vector<uint8_t> advertisingData = TheServer->getAdvertisingData();
+	const bool usesAdvertisingInstance = !advertisingData.empty();
+	const bool enableGlobalAdvertising = TheServer->getEnableAdvertising() && !usesAdvertisingInstance;
+	bool adFlag = info.currentSettings.isSet(HciAdapter::EHciAdvertising) == enableGlobalAdvertising;
 	bool anFlag = (advertisingName.length() == 0 || advertisingName == info.name) && (advertisingShortName.length() == 0 || advertisingShortName == info.shortName);
-	bool adDataFlag = HciAdapter::getInstance().getAdvertisingData() == TheServer->getAdvertisingData();
+	bool adDataFlag = HciAdapter::getInstance().getAdvertisingData() == advertisingData;
 
 	Logger::debug(SSTR << "JESUS " << __LINE__ << " pwFlag[" << pwFlag << "] leFlag[" << leFlag << "] brFlag[" << brFlag << "] scFlag[" << scFlag << "] bnFlag[" << bnFlag << "] cnFlag[" << cnFlag << "] diFlag[" << diFlag << "] adFlag[" << adFlag << "] anFlag[" << anFlag << "] adDataFlag[" << adDataFlag << "]");
 
@@ -752,8 +768,8 @@ void configureAdapter()
 		// Change the Advertising state?
 		if (!adFlag)
 		{
-			Logger::debug(SSTR << (TheServer->getEnableAdvertising() ? "Enabling":"Disabling") << " Advertising");
-			if (!mgmt.setAdvertising(TheServer->getEnableAdvertising() ? 1 : 0)) { setRetry(); return; }
+			Logger::debug(SSTR << (enableGlobalAdvertising ? "Enabling":"Disabling") << " global Advertising");
+			if (!mgmt.setAdvertising(enableGlobalAdvertising ? 1 : 0)) { setRetry(); return; }
 		}
 		Logger::debug(SSTR << "JESUS " << __LINE__);
 		// Set the name?
@@ -770,8 +786,8 @@ void configureAdapter()
 		// Set the advertising data
 		if (!adDataFlag)
 		{
-			Logger::info(SSTR << "JESUS Setting advertising data to '" << Utils::hex(TheServer->getAdvertisingData()) << "'");
-			if (!mgmt.setAdvertisingData(TheServer->getAdvertisingData())) { setRetry(); return; }
+			Logger::info(SSTR << "JESUS Setting advertising data to '" << Utils::hex(advertisingData) << "'");
+			if (!mgmt.setAdvertisingData(advertisingData)) { setRetry(); return; }
 		}
 		Logger::debug(SSTR << "JESUS " << __LINE__);
 	}

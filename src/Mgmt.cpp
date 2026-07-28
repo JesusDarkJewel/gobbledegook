@@ -163,9 +163,23 @@ bool Mgmt::setState(uint16_t commandCode, uint16_t controllerId, uint8_t newStat
 
 bool Mgmt::addAdvertising(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse)
 {
-    if (adData.size() > 31 || scanResponse.size() > 31) {
-        Logger::error("AD or Scan Response data exceeds 31 bytes");
+    // Managed Flags and TX Power consume six bytes of the legacy 31-byte
+    // advertising payload. Reject invalid input before touching the active
+    // instance so a bad runtime update cannot make the beacon disappear.
+    if (adData.size() > 25 || scanResponse.size() > 31) {
+        Logger::error("Advertising data exceeds 25 bytes or Scan Response data exceeds 31 bytes");
         return false;
+    }
+
+    for (size_t offset = 0; offset < adData.size();)
+    {
+        const size_t sectionLength = adData[offset];
+        if (sectionLength == 0 || offset + sectionLength + 1 > adData.size())
+        {
+            Logger::error("Advertising data contains a malformed AD section");
+            return false;
+        }
+        offset += sectionLength + 1;
     }
 
     // Fixed part of the MGMT_OP_ADD_ADVERTISING parameters
@@ -194,9 +208,12 @@ bool Mgmt::addAdvertising(const std::vector<uint8_t>& adData, const std::vector<
 
     // Fill fixed fields
     request.instanceId = 1; // fixed instance ID (can be made configurable)
-    memset(request.flags, 0, 4); // no flags (0x01=connectable, 0x02=discoverable, etc.)
-		request.flags[0] |= 0x01; // Set connectable flag
-		request.flags[0] |= 0x02; // Set discoverable flag
+    memset(request.flags, 0, 4);
+    request.flags[0] |= 0x01; // Connectable
+    request.flags[0] |= 0x02; // Discoverable
+    request.flags[0] |= 0x08; // Let the kernel add the standard Flags AD section
+    request.flags[0] |= 0x10; // Let the kernel add TX Power
+    request.flags[0] |= 0x40; // Put the controller's local name in Scan Response
     request.duration = 0;    // infinite
     request.timeout = 0;     // no timeout
     request.adLen = static_cast<uint8_t>(adData.size());
@@ -204,9 +221,13 @@ bool Mgmt::addAdvertising(const std::vector<uint8_t>& adData, const std::vector<
 
     // Copy data sequentially: first AD data, then Scan Response data
     uint8_t* p = request.data;
-    memcpy(p, adData.data(), adData.size());
+    if (!adData.empty()) {
+        memcpy(p, adData.data(), adData.size());
+    }
     p += adData.size();
-    memcpy(p, scanResponse.data(), scanResponse.size());
+    if (!scanResponse.empty()) {
+        memcpy(p, scanResponse.data(), scanResponse.size());
+    }
 
     if (!HciAdapter::getInstance().sendCommand(request)) {
         Logger::error("Failed to send Add Advertising command");
@@ -239,25 +260,10 @@ bool Mgmt::removeAdvertising()
 
 bool Mgmt::setAdvertisingData(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse)
 {
-    // Remove any existing instance with this ID (ignore failure)
-    removeAdvertising();
-
-    // Add the new instance
-    if (!addAdvertising(adData, scanResponse)) {
-        Logger::error("Failed to add new advertising instance");
-        return false;
-    }
-
-    // Enable advertising if it's not already enabled (optional, but we do it here)
-    // Note: This is already handled by configureAdapter, but can be called here for safety.
-    // To avoid duplication, we might skip this and rely on the global adFlag in configureAdapter.
-    // But for direct updates, we should enable it.
-    setAdvertising(1); // enable advertising for instance 0? Actually, setAdvertising toggles global advertising.
-    // We need to set the advertising flag to 1 to start advertising.
-    // However, setAdvertising(1) will enable advertising globally. Since we have an instance,
-    // it will advertise that instance.
-
-    return true;
+    // Re-adding the same instance updates it atomically. Removing it first
+    // creates a period with no advertisement and can leave advertising
+    // disabled permanently when the following Add Advertising fails.
+    return addAdvertising(adData, scanResponse);
 }
 
 // bool Mgmt::setAdvertisingData(const std::vector<uint8_t>& data)
