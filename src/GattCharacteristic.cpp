@@ -42,7 +42,7 @@ namespace ggk {
 // Genreally speaking, these objects should not be constructed directly. Rather, use the `gattCharacteristicBegin()` method
 // in `GattService`.
 GattCharacteristic::GattCharacteristic(DBusObject &owner, GattService &service, const std::string &name)
-: GattInterface(owner, name), service(service), pOnUpdatedValueFunc(nullptr)
+: GattInterface(owner, name), service(service), pOnUpdatedValueFunc(nullptr), notifying(false)
 {
 }
 
@@ -120,6 +120,34 @@ GattCharacteristic &GattCharacteristic::onWriteValue(MethodCallback callback)
 	static const char *inArgs[] = {"ay", "a{sv}", nullptr};
 	addMethod("WriteValue", inArgs, nullptr, reinterpret_cast<DBusMethod::Callback>(callback));
 	return *this;
+}
+
+GattCharacteristic &GattCharacteristic::enableNotifications()
+{
+	static const char *inArgs[] = {nullptr};
+
+	addMethod("StartNotify", inArgs, nullptr, reinterpret_cast<DBusMethod::Callback>(
+		+[](const GattCharacteristic &self, GDBusConnection *, const std::string &,
+			GVariant *, GDBusMethodInvocation *pInvocation, void *)
+		{
+			self.notifying = true;
+			self.methodReturnVariant(pInvocation, nullptr);
+		}));
+
+	addMethod("StopNotify", inArgs, nullptr, reinterpret_cast<DBusMethod::Callback>(
+		+[](const GattCharacteristic &self, GDBusConnection *, const std::string &,
+			GVariant *, GDBusMethodInvocation *pInvocation, void *)
+		{
+			self.notifying = false;
+			self.methodReturnVariant(pInvocation, nullptr);
+		}));
+
+	return *this;
+}
+
+bool GattCharacteristic::isNotifying() const
+{
+	return notifying;
 }
 
 // Custom support for handling updates to our characteristic's value
@@ -207,8 +235,20 @@ void GattCharacteristic::sendChangeNotificationVariant(GDBusConnection *pBusConn
 	g_auto(GVariantBuilder) builder;
 	g_variant_builder_init(&builder, G_VARIANT_TYPE_ARRAY);
 	g_variant_builder_add(&builder, "{sv}", "Value", pNewValue);
-	GVariant *pSasv = g_variant_new("(sa{sv})", "org.bluez.GattCharacteristic1", &builder);
-	owner.emitSignal(pBusConnection, "org.freedesktop.DBus.Properties", "PropertiesChanged", pSasv);
+
+	g_auto(GVariantBuilder) invalidatedProperties;
+	g_variant_builder_init(&invalidatedProperties, G_VARIANT_TYPE("as"));
+
+	GVariant *pPropertiesChanged = g_variant_new(
+		"(sa{sv}as)",
+		"org.bluez.GattCharacteristic1",
+		&builder,
+		&invalidatedProperties);
+	owner.emitSignal(
+		pBusConnection,
+		"org.freedesktop.DBus.Properties",
+		"PropertiesChanged",
+		pPropertiesChanged);
 }
 
 }; // namespace ggk

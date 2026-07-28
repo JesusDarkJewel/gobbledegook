@@ -32,7 +32,7 @@
 //         the same only in reverse.
 //
 //         While the server is running, you will likely need to update the data being served. This is done by calling
-//         `ggkNofifyUpdatedCharacteristic()` or `ggkNofifyUpdatedDescriptor()` with the full path to the characteristic or delegate
+//         `ggkNotifyUpdatedCharacteristic()` or `ggkNotifyUpdatedDescriptor()` with the full path to the characteristic or delegate
 //         whose data has been updated. This will trigger your server's `onUpdatedValue()` method, which can perform whatever
 //         actions are needed such as sending out a change notification (or in BlueZ parlance, a "PropertiesChanged" signal.)
 //
@@ -401,7 +401,7 @@ int main(int argc, char **ppArgv)
 		std::this_thread::sleep_for(std::chrono::seconds(15));
 
 		serverDataBatteryLevel = std::max(serverDataBatteryLevel - 1, 0);
-		ggkNofifyUpdatedCharacteristic("/com/gobbledegook/battery/level");
+		ggkNotifyUpdatedCharacteristic("/com/gobbledegook/battery/level");
 	}
 
 	// Wait for the server to come to a complete stop (CTRL-C from the command line)

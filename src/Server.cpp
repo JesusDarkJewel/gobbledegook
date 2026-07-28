@@ -61,7 +61,7 @@
 //
 // While the server is running, if data is updated via a write operation from the client the setter delegate will be called. If your
 // application also generates or updates data periodically, it can push those updates to the server via call to
-// `ggkNofifyUpdatedCharacteristic()` or `ggkNofifyUpdatedDescriptor()`.
+// `ggkNotifyUpdatedCharacteristic()` or `ggkNotifyUpdatedDescriptor()`.
 //
 // >>
 // >>>  UNDERSTANDING THE UNDERLYING FRAMEWORKS

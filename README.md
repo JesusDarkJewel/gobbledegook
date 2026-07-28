@@ -211,7 +211,7 @@ Events can be used to update server data, send notifications or perform any othe
 
 Register a lambda or callback that is called when data is updated internally by the application.
 
-As an application generates or updates its own data, it may notify the server of those updates using the public interface methods `ggkNofifyUpdatedCharacteristic()` and `ggkNofifyUpdatedDescriptor()`. The server will then call the appropriate `onUpdateValue` lambda or callback for the characteristic or descriptor receiving the update. This is a convenience method of GGK and is not part of the Bluetooth standard or BlueZ D-Bus GATT API.
+As an application generates or updates its own data, it may notify the server of those updates using the public interface methods `ggkNotifyUpdatedCharacteristic()` and `ggkNotifyUpdatedDescriptor()`. The server will then call the appropriate `onUpdateValue` lambda or callback for the characteristic or descriptor receiving the update. This is a convenience method of GGK and is not part of the Bluetooth standard or BlueZ D-Bus GATT API.
 
 Aside from the application performing data updates, a characteristic or descriptor may modify its own data from within a lambda and trigger this call. For details, see `self.callOnUpdatedValue()` method in the **Lambda reference** section below.
 

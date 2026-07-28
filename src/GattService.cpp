@@ -81,6 +81,14 @@ GattCharacteristic &GattService::gattCharacteristicBegin(const std::string &path
 	characteristic.addProperty<GattCharacteristic>("UUID", uuid);
 	characteristic.addProperty<GattCharacteristic>("Service", owner.getPath());
 	characteristic.addProperty<GattCharacteristic>("Flags", flags);
+	for (const char *flag : flags)
+	{
+		if (nullptr != flag && (std::string(flag) == "notify" || std::string(flag) == "indicate"))
+		{
+			characteristic.enableNotifications();
+			break;
+		}
+	}
 	return characteristic;
 }
 

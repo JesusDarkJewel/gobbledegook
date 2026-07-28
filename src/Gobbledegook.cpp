@@ -120,7 +120,7 @@ void ggkLogRegisterAlways(GGKLogReceiver receiver) { Logger::registerAlwaysRecei
 // Adds an update to the front of the queue for a characteristic at the given object path
 //
 // Returns non-zero value on success or 0 on failure.
-int ggkNofifyUpdatedCharacteristic(const char *pObjectPath)
+int ggkNotifyUpdatedCharacteristic(const char *pObjectPath)
 {
 	return ggkPushUpdateQueue(pObjectPath, "org.bluez.GattCharacteristic1") != 0;
 }
@@ -128,13 +128,13 @@ int ggkNofifyUpdatedCharacteristic(const char *pObjectPath)
 // Adds an update to the front of the queue for a descriptor at the given object path
 //
 // Returns non-zero value on success or 0 on failure.
-int ggkNofifyUpdatedDescriptor(const char *pObjectPath)
+int ggkNotifyUpdatedDescriptor(const char *pObjectPath)
 {
 	return ggkPushUpdateQueue(pObjectPath, "org.bluez.GattDescriptor1") != 0;
 }
 
 // Adds a named update to the front of the queue. Generally, this routine should not be used directly. Instead, use the
-// `ggkNofifyUpdatedCharacteristic()` instead.
+// `ggkNotifyUpdatedCharacteristic()` instead.
 //
 // Returns non-zero value on success or 0 on failure.
 int ggkPushUpdateQueue(const char *pObjectPath, const char *pInterfaceName)

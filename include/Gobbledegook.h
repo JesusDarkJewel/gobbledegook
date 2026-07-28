@@ -30,7 +30,7 @@
 //       with the server. See standalone.cpp for an example of how this is done.
 //
 //       In addition, the server provides a thread-safe queue for notifications of data updates to the server. Generally, the only
-//       methods an application will need to call are `ggkNofifyUpdatedCharacteristic` and `ggkNofifyUpdatedDescriptor`. The other
+//       methods an application will need to call are `ggkNotifyUpdatedCharacteristic` and `ggkNotifyUpdatedDescriptor`. The other
 //       methods are provided in case an application requires extended functionality.
 //
 //     * Server control
@@ -120,15 +120,15 @@ extern "C"
 	// Adds an update to the front of the queue for a characteristic at the given object path
 	//
 	// Returns non-zero value on success or 0 on failure.
-	int ggkNofifyUpdatedCharacteristic(const char *pObjectPath);
+	int ggkNotifyUpdatedCharacteristic(const char *pObjectPath);
 
 	// Adds an update to the front of the queue for a descriptor at the given object path
 	//
 	// Returns non-zero value on success or 0 on failure.
-	int ggkNofifyUpdatedDescriptor(const char *pObjectPath);
+	int ggkNotifyUpdatedDescriptor(const char *pObjectPath);
 
 	// Adds a named update to the front of the queue. Generally, this routine should not be used directly. Instead, use the
-	// `ggkNofifyUpdatedCharacteristic()` instead.
+	// `ggkNotifyUpdatedCharacteristic()` instead.
 	//
 	// Returns non-zero value on success or 0 on failure.
 	int ggkPushUpdateQueue(const char *pObjectPath, const char *pInterfaceName);

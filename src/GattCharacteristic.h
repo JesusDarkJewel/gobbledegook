@@ -137,6 +137,13 @@ struct GattCharacteristic : GattInterface
 	//     Output args: void
 	GattCharacteristic &onWriteValue(MethodCallback callback);
 
+	// Adds the StartNotify and StopNotify methods required by BlueZ for
+	// characteristics whose flags include "notify" or "indicate".
+	GattCharacteristic &enableNotifications();
+
+	// Returns whether BlueZ currently has an active notification session.
+	bool isNotifying() const;
+
 	// Custom support for handling updates to our characteristic's value
 	//
 	// Defined as: (NOT defined by Bluetooth or BlueZ - this method is internal only)
@@ -215,6 +222,7 @@ protected:
 
 	GattService &service;
 	UpdatedValueCallback pOnUpdatedValueFunc;
+	mutable bool notifying;
 };
 
 }; // namespace ggk
