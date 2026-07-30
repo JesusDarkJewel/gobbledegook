@@ -376,8 +376,8 @@ int main(int argc, char **ppArgv)
 	// Create the server instance using the factory method of our custom class
 	auto server = MyServer::create<MyServer>(
 		std::string{"gobbledegook"},        // service name
-		std::string{},                      // keep the adapter's system advertising name
-		std::string{},                      // keep the adapter's system short name
+		std::string{"Gobbledegook"},        // advertising name
+		std::string{"Gobbledegook"},        // advertising short name
 		dataGetter,
 		dataSetter
 	);

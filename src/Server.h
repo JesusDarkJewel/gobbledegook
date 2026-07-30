@@ -84,6 +84,13 @@ struct Server
 	// Returns the requested setting the bondable state (true = enabled, false = disabled)
 	bool getEnableBondable() const { return enableBondable; }
 
+	// Returns whether GGK may change the controller's system-wide local name.
+	bool getEnableSetLocalName() const { return enableSetLocalName; }
+
+	// Controls whether GGK may change the controller's system-wide local name.
+	// This does not affect Local Name fields already present in advertising data.
+	void setEnableSetLocalName(bool enabled) { enableSetLocalName = enabled; }
+
 	// Returns our registered data getter
 	GGKServerDataGetter getDataGetter() const { return dataGetter; }
 
@@ -232,6 +239,10 @@ private:
 
 	// Bondable requested state
 	bool enableBondable;
+
+	// Whether adapter configuration may issue the Bluetooth Management
+	// Set Local Name command.
+	bool enableSetLocalName;
 
 	// The getter callback that is responsible for returning current server data that is shared over Bluetooth
 	GGKServerDataGetter dataGetter;

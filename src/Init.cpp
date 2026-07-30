@@ -705,7 +705,9 @@ void configureAdapter()
 	const bool usesAdvertisingInstance = !advertisingData.empty();
 	const bool enableGlobalAdvertising = TheServer->getEnableAdvertising() && !usesAdvertisingInstance;
 	bool adFlag = info.currentSettings.isSet(HciAdapter::EHciAdvertising) == enableGlobalAdvertising;
-	bool anFlag = (advertisingName.length() == 0 || advertisingName == info.name) && (advertisingShortName.length() == 0 || advertisingShortName == info.shortName);
+	bool anFlag = !TheServer->getEnableSetLocalName() ||
+		((advertisingName.length() == 0 || advertisingName == info.name) &&
+		 (advertisingShortName.length() == 0 || advertisingShortName == info.shortName));
 	bool adDataFlag = HciAdapter::getInstance().getAdvertisingData() == advertisingData;
 
 	Logger::debug(SSTR << "JESUS " << __LINE__ << " pwFlag[" << pwFlag << "] leFlag[" << leFlag << "] brFlag[" << brFlag << "] scFlag[" << scFlag << "] bnFlag[" << bnFlag << "] cnFlag[" << cnFlag << "] diFlag[" << diFlag << "] adFlag[" << adFlag << "] anFlag[" << anFlag << "] adDataFlag[" << adDataFlag << "]");
@@ -772,7 +774,9 @@ void configureAdapter()
 			if (!mgmt.setAdvertising(enableGlobalAdvertising ? 1 : 0)) { setRetry(); return; }
 		}
 		Logger::debug(SSTR << "JESUS " << __LINE__);
-		// Set the name?
+		// Set the controller's system-wide local name when this capability is
+		// enabled. Advertising data may still contain its own Local Name field
+		// when this command is disabled.
 		if (!anFlag)
 		{
 			Logger::info(SSTR << "Setting advertising name to '" << advertisingName << "' (with short name: '" << advertisingShortName << "')");

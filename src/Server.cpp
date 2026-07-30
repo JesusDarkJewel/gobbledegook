@@ -236,6 +236,11 @@ Server::Server(const std::string &serviceName, const std::string &advertisingNam
 	enableDiscoverable = true;
 	enableAdvertising = true;
 	enableBondable = false;
+#ifdef GGK_DISABLE_SET_LOCAL_NAME
+	enableSetLocalName = false;
+#else
+	enableSetLocalName = true;
+#endif
 
 	//
 	// Define the server

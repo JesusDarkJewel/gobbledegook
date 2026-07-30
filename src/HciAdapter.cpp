@@ -331,7 +331,7 @@ void HciAdapter::runEventThread()
 				}
 
 				// Notify anybody waiting that we received a response to their command code
-				setCommandResponse(event.commandCode);
+				setCommandResponse(event.commandCode, event.status);
 
 				break;
 			}
@@ -341,7 +341,7 @@ void HciAdapter::runEventThread()
 				CommandStatusEvent event(responsePacket);
 
 				// Notify anybody waiting that we received a response to their command code
-				setCommandResponse(event.commandCode);
+				setCommandResponse(event.commandCode, event.status);
 				break;
 			}
 			// Command status event
@@ -517,6 +517,7 @@ bool HciAdapter::sendCommand(HciHeader &request)
 	uint16_t dataSize = request.dataSize;
 
 	conditionalValue = -1;
+	commandResponseSuccess = false;
 	std::future<bool> fut = std::async(std::launch::async,
 	[&]() mutable
 	{
@@ -561,14 +562,15 @@ bool HciAdapter::waitForCommandResponse(uint16_t commandCode, int timeoutMS)
 		Logger::debug(SSTR << "  + Recieved the command code we were waiting for: " << Utils::hex(commandCode) << " (" << getCommandCodeName(commandCode) << ")");
 	}
 
-	return success;
+	return success && commandResponseSuccess;
 }
 
 // Sets the command response and notifies the waiting std::condition_variable (see `waitForCommandResponse`)
-void HciAdapter::setCommandResponse(uint16_t commandCode)
+void HciAdapter::setCommandResponse(uint16_t commandCode, uint8_t status)
 {
 	std::lock_guard<std::mutex> lk(commandResponseMutex);
 	conditionalValue = commandCode;
+	commandResponseSuccess = status == 0;
 	cvCommandResponse.notify_one();
 }
 

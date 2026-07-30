@@ -23,10 +23,17 @@ sudo sed -i \
 
 ```bash
 sudo apt-get update
+sudo DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y
 sudo apt-get install -y \
   bluez libglib2.0-dev libdbus-1-dev libbluetooth-dev
 sudo systemctl enable --now bluetooth.service
 ```
+
+После `full-upgrade` следует перезагрузить плату и заново скопировать sysroot на
+Windows: заголовки и библиотеки сборки должны точно соответствовать обновлённой
+целевой системе. На проверенной Debian 11 установлены BlueZ
+`5.55-3.1+deb11u2`, glibc `2.31-13+deb11u14` и systemd
+`247.3-7+deb11u8`; это последние версии из штатных репозиториев bullseye.
 
 Проверка:
 
@@ -94,6 +101,17 @@ standalone-orange
 современное имя `-std=c++23`. Используемые проектом возможности языка
 поддерживаются GCC 10.
 
+Для Orange Pi библиотека собирается с:
+
+```text
+-DGGK_DISABLE_SET_LOCAL_NAME=1
+```
+
+Этот флаг отключает только изменение системного имени контроллера через
+Bluetooth Management API. Значения `advertisingName` и
+`advertisingShortName` сохраняются и по-прежнему используются для поля
+Local Name в BLE-рекламе.
+
 `libstdc++.so.6`, `libgcc_s.so.1`, GLib и D-Bus при линковке берутся из
 sysroot Orange Pi. Это удерживает требование бинарника в пределах GLIBC 2.30.
 
@@ -132,7 +150,12 @@ journalctl -u ggk-smoke.service -f
 
 ```bash
 sudo systemctl stop ggk-smoke.service
+sudo btmgmt rm-adv 1
 ```
+
+Последняя команда нужна только после аварийного завершения: transient unit
+обычно удаляет рекламный instance сам. Если старый instance остался в ядре,
+повторный `Add Advertising` вернёт `Busy (0x0A)`.
 
 ## 7. Особенность Orange Pi 3 LTS
 
@@ -140,14 +163,28 @@ Bluetooth Management command `Set Local Name (0x000F)` зависает на т�
 драйвере платы. После команды HCI остаётся выключенным, а процесс может
 застрять в kernel wait.
 
-Поэтому sample `standalone.cpp` создаёт сервер с пустыми advertising name и
-short name. Это предусмотренный Gobbledegook способ сохранить системное имя
-адаптера и не отправлять несовместимую команду:
+Поэтому Orange Pi build использует compile-time capability flag:
 
-```cpp
-std::string{},
-std::string{},
+```text
+GGK_DISABLE_SET_LOCAL_NAME=1
 ```
+
+В обычных сборках прежнее поведение сохранено. Кроме того, приложение может
+явно вызвать `server->setEnableSetLocalName(false)` до `ggkRun()`.
+Отключение команды не отключает имя маяка: `standalone` по-прежнему передаёт
+`Gobbledegook` как full и short advertising name, а `Server::buildServices()`
+добавляет full name в advertising data как AD type `0x09`.
+
+`Mgmt::addAdvertising()` не включает kernel-managed Flags, TX Power или Local
+Name. Приложение передаёт законченный AD buffer самостоятельно. Нельзя
+одновременно передать собственные поля Flags/Local Name и запросить у kernel
+добавление тех же полей: BlueZ MGMT возвращает `Invalid Parameters (0x0D)`.
+
+Исключение — AD type `0x01 Flags`: `MGMT_OP_ADD_ADVERTISING` всегда формирует
+его из command flags. Библиотека автоматически удаляет этот раздел из
+пользовательского буфера, сохраняя Local Name, Service Data и Manufacturer
+Specific Data. Это позволяет старому прикладному коду продолжать передавать
+полный AD buffer.
 
 Если старый бинарник уже завис на `Set Local Name`, обычный SIGKILL может не
 помочь. Требуется перезагрузка или отключение питания. На текущем образе
@@ -166,4 +203,19 @@ std::string{},
 
 ```powershell
 .\build\Release\blebench.exe gatt AA:BB:CC:DD:EE:FF
+```
+
+Windows может показать GAP-имя контроллера (`orangepi3-lts`) после подключения
+и не раскрыть raw AD sections для этого устройства. Фактическое имя в
+рекламном пакете можно проверить на Orange Pi:
+
+```bash
+sudo btmon
+```
+
+В трассе `MGMT Command: Add Advertising` должно быть:
+
+```text
+Advertising data length: 14
+Name (complete): Gobbledegook
 ```

@@ -163,14 +163,7 @@ bool Mgmt::setState(uint16_t commandCode, uint16_t controllerId, uint8_t newStat
 
 bool Mgmt::addAdvertising(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse)
 {
-    // Managed Flags and TX Power consume six bytes of the legacy 31-byte
-    // advertising payload. Reject invalid input before touching the active
-    // instance so a bad runtime update cannot make the beacon disappear.
-    if (adData.size() > 25 || scanResponse.size() > 31) {
-        Logger::error("Advertising data exceeds 25 bytes or Scan Response data exceeds 31 bytes");
-        return false;
-    }
-
+    std::vector<uint8_t> effectiveAdData;
     for (size_t offset = 0; offset < adData.size();)
     {
         const size_t sectionLength = adData[offset];
@@ -179,7 +172,24 @@ bool Mgmt::addAdvertising(const std::vector<uint8_t>& adData, const std::vector<
             Logger::error("Advertising data contains a malformed AD section");
             return false;
         }
+
+        // MGMT_OP_ADD_ADVERTISING derives the Flags AD section from its
+        // connectable/discoverable command flags. Passing AD type 0x01 in the
+        // payload as well makes the kernel reject the request with
+        // Invalid Parameters.
+        if (adData[offset + 1] != 0x01)
+        {
+            effectiveAdData.insert(
+                effectiveAdData.end(),
+                adData.begin() + offset,
+                adData.begin() + offset + sectionLength + 1);
+        }
         offset += sectionLength + 1;
+    }
+
+    if (effectiveAdData.size() > 31 || scanResponse.size() > 31) {
+        Logger::error("Advertising data or Scan Response data exceeds 31 bytes");
+        return false;
     }
 
     // Fixed part of the MGMT_OP_ADD_ADVERTISING parameters
@@ -204,27 +214,28 @@ bool Mgmt::addAdvertising(const std::vector<uint8_t>& adData, const std::vector<
     request.controllerId = 0; // primary controller (hci0)
 
     // Parameter size = size of fixed part (without HciHeader) + actual data length
-    request.dataSize = sizeof(SRequestHeader) - sizeof(HciAdapter::HciHeader) + adData.size() + scanResponse.size();
+    request.dataSize = sizeof(SRequestHeader) - sizeof(HciAdapter::HciHeader) + effectiveAdData.size() + scanResponse.size();
 
     // Fill fixed fields
     request.instanceId = 1; // fixed instance ID (can be made configurable)
     memset(request.flags, 0, 4);
     request.flags[0] |= 0x01; // Connectable
     request.flags[0] |= 0x02; // Discoverable
-    request.flags[0] |= 0x08; // Let the kernel add the standard Flags AD section
-    request.flags[0] |= 0x10; // Let the kernel add TX Power
-    request.flags[0] |= 0x40; // Put the controller's local name in Scan Response
+    // Do not ask the kernel to append Flags, TX Power or the controller's
+    // Local Name. Those managed fields conflict with the complete payload
+    // supplied above and prevent applications from advertising a name that
+    // differs from the system-wide controller name.
     request.duration = 0;    // infinite
     request.timeout = 0;     // no timeout
-    request.adLen = static_cast<uint8_t>(adData.size());
+    request.adLen = static_cast<uint8_t>(effectiveAdData.size());
     request.scanRspLen = static_cast<uint8_t>(scanResponse.size());
 
     // Copy data sequentially: first AD data, then Scan Response data
     uint8_t* p = request.data;
-    if (!adData.empty()) {
-        memcpy(p, adData.data(), adData.size());
+    if (!effectiveAdData.empty()) {
+        memcpy(p, effectiveAdData.data(), effectiveAdData.size());
     }
-    p += adData.size();
+    p += effectiveAdData.size();
     if (!scanResponse.empty()) {
         memcpy(p, scanResponse.data(), scanResponse.size());
     }

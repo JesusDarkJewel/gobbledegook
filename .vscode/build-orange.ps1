@@ -25,6 +25,7 @@ foreach ($path in @($cxx, $ar, $readelf, "$Sysroot\usr\include", $targetLib)) {
 New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 
 $common = @(
+    "-DGGK_DISABLE_SET_LOCAL_NAME=1",
     "-fPIC", "-Wall", "-Wextra", "-std=c++2a", "-pthread", "-g", "-O2",
     "-I$projectRoot\src",
     "-I$projectRoot\include",
