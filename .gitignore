@@ -1,3 +1,8 @@
 /libggk.a
 /standalone-cross
 /tls-smoke-armv6
+/.build-orange/
+/.build-orange-gcc10/
+/.sysroot-orange/
+/libggk-orange.a
+/standalone-orange
