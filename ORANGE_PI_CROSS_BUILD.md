@@ -103,15 +103,6 @@ standalone-orange
 
 Для Orange Pi библиотека собирается с:
 
-```text
--DGGK_DISABLE_SET_LOCAL_NAME=1
-```
-
-Этот флаг отключает только изменение системного имени контроллера через
-Bluetooth Management API. Значения `advertisingName` и
-`advertisingShortName` сохраняются и по-прежнему используются для поля
-Local Name в BLE-рекламе.
-
 `libstdc++.so.6`, `libgcc_s.so.1`, GLib и D-Bus при линковке берутся из
 sysroot Orange Pi. Это удерживает требование бинарника в пределах GLIBC 2.30.
 
@@ -166,7 +157,7 @@ Bluetooth Management command `Set Local Name (0x000F)` зависает на т�
 Поэтому Orange Pi build использует compile-time capability flag:
 
 ```text
-GGK_DISABLE_SET_LOCAL_NAME=1
+GGK_DISABLE_SET_LOCAL_NAME=1 (только для старых образов, где Set Local Name зависает)
 ```
 
 В обычных сборках прежнее поведение сохранено. Кроме того, приложение может
