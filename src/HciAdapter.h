@@ -427,6 +427,7 @@ public:
 	VersionInformation getVersionInformation() { return versionInformation; }
 	LocalName getLocalName() { return localName; }
 	int getActiveConnectionCount() { return activeConnections; }
+	uint8_t getSupportedAdvertisingInstances() const { return supportedAdvertisingInstances; }
 	const std::vector<uint8_t>& getAdvertisingData() { return advertisingData; }
 
 	//
@@ -477,7 +478,7 @@ public:
 
 private:
 	// Private constructor for our Singleton
-	HciAdapter() : commandResponseLock(commandResponseMutex), conditionalValue(-1), commandResponseSuccess(false), activeConnections(0) {}
+	HciAdapter() : commandResponseLock(commandResponseMutex), conditionalValue(-1), commandResponseSuccess(false), activeConnections(0), supportedAdvertisingInstances(1) {}
 
 	// Uses a std::condition_variable to wait for a response event for the given `commandCode` or `timeoutMS` milliseconds.
 	//
@@ -511,6 +512,7 @@ private:
 
 	// Our active connection count
 	int activeConnections;
+	uint8_t supportedAdvertisingInstances;
 	std::vector<uint8_t> auxiliaryAdvertisingInstances;
 };
 

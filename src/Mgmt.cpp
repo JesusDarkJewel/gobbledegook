@@ -290,7 +290,8 @@ bool Mgmt::setAdvertisingData(const std::vector<uint8_t>& adData, const std::vec
 bool Mgmt::setAdvertisingDataInstances(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse)
 {
     bool success = true;
-    for (uint8_t instance = 1; instance <= 16; ++instance)
+    const uint8_t instances = HciAdapter::getInstance().getSupportedAdvertisingInstances();
+    for (uint8_t instance = 1; instance <= instances; ++instance)
     {
         if (!addAdvertisingInstance(instance, adData, scanResponse))
         {

@@ -266,8 +266,19 @@ void HciAdapter::runEventThread()
 				uint8_t *data = responsePacket.data() + sizeof(CommandCompleteEvent);
 				size_t dataLen = responsePacket.size() - sizeof(CommandCompleteEvent);
 
-				switch(event.commandCode)
+					switch(event.commandCode)
 				{
+					case Mgmt::EReadAdvertisingFeaturesCommand:
+					{
+						// status is part of CommandCompleteEvent; the payload is:
+						// flags[4], max_adv_data_len[2], max_scan_rsp_len[2], instances[1].
+						if (event.status == 0 && dataLen >= 9 && data[8] != 0)
+						{
+							supportedAdvertisingInstances = data[8];
+							Logger::info(SSTR << "  + Supported advertising instances: " << (int)supportedAdvertisingInstances);
+						}
+						break;
+					}
 					// We just log the version/revision info
 					case Mgmt::EReadVersionInformationCommand:
 					{
@@ -415,6 +426,15 @@ void HciAdapter::sync(uint16_t controllerIndex)
 	if (!HciAdapter::getInstance().sendCommand(request))
 	{
 		Logger::error("Failed to get current settings");
+	}
+
+	Logger::debug("Synchronizing advertising features");
+	request.code = Mgmt::EReadAdvertisingFeaturesCommand;
+	request.controllerId = controllerIndex;
+	request.dataSize = 0;
+	if (!HciAdapter::getInstance().sendCommand(request))
+	{
+		Logger::warn("Failed to get advertising features; using one advertising instance");
 	}
 }
 
