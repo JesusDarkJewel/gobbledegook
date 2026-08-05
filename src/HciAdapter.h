@@ -29,6 +29,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <atomic>
 
 #include "HciSocket.h"
 #include "Utils.h"
@@ -469,6 +470,7 @@ public:
 	//
 	// This mehtod should not be called directly. Rather, it runs continuously on a thread until the server shuts down
 	void runEventThread();
+	void runWatchdogThread();
 
 	/**
 	 * Get a human-readable name for a command code.
@@ -495,6 +497,8 @@ private:
 
 	// Our event thread listens for events coming from the adapter and deals with them appropriately
 	static std::thread eventThread;
+	static std::thread watchdogThread;
+	std::atomic<bool> watchdogStop{false};
 
 	// Our adapter information
 	AdapterSettings adapterSettings;
@@ -504,6 +508,7 @@ private:
 
 	std::condition_variable cvCommandResponse;
 	std::mutex commandResponseMutex;
+	std::mutex commandSendMutex;
 	std::unique_lock<std::mutex> commandResponseLock;
 	int conditionalValue;
 	bool commandResponseSuccess;
