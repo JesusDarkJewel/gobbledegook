@@ -163,6 +163,11 @@ bool Mgmt::setState(uint16_t commandCode, uint16_t controllerId, uint8_t newStat
 
 bool Mgmt::addAdvertising(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse)
 {
+	return addAdvertisingInstance(advertiseInstanceId, adData, scanResponse);
+}
+
+bool Mgmt::addAdvertisingInstance(uint8_t instanceId, const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse)
+{
     std::vector<uint8_t> effectiveAdData;
     for (size_t offset = 0; offset < adData.size();)
     {
@@ -217,7 +222,7 @@ bool Mgmt::addAdvertising(const std::vector<uint8_t>& adData, const std::vector<
     request.dataSize = sizeof(SRequestHeader) - sizeof(HciAdapter::HciHeader) + effectiveAdData.size() + scanResponse.size();
 
     // Fill fixed fields
-    request.instanceId = 1; // fixed instance ID (can be made configurable)
+    request.instanceId = instanceId;
     memset(request.flags, 0, 4);
     request.flags[0] |= 0x01; // Connectable
     request.flags[0] |= 0x02; // Discoverable
@@ -249,6 +254,11 @@ bool Mgmt::addAdvertising(const std::vector<uint8_t>& adData, const std::vector<
 
 bool Mgmt::removeAdvertising()
 {
+	return removeAdvertisingInstance(advertiseInstanceId);
+}
+
+bool Mgmt::removeAdvertisingInstance(uint8_t instanceId)
+{
     struct SRequest : HciAdapter::HciHeader
     {
         uint8_t instanceId;
@@ -258,7 +268,7 @@ bool Mgmt::removeAdvertising()
     request.code = Mgmt::ERemoveAdvertisingCommand;
     request.controllerId = 0;
     request.dataSize = sizeof(SRequest) - sizeof(HciAdapter::HciHeader);
-    request.instanceId = advertiseInstanceId;
+    request.instanceId = instanceId;
 
     if (!HciAdapter::getInstance().sendCommand(request)) {
         // It's okay if the instance didn't exist – we just log a debug message
@@ -275,6 +285,20 @@ bool Mgmt::setAdvertisingData(const std::vector<uint8_t>& adData, const std::vec
     // creates a period with no advertisement and can leave advertising
     // disabled permanently when the following Add Advertising fails.
     return addAdvertising(adData, scanResponse);
+}
+
+bool Mgmt::setAdvertisingDataInstances(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse)
+{
+    bool success = true;
+    for (uint8_t instance = 1; instance <= 16; ++instance)
+    {
+        if (!addAdvertisingInstance(instance, adData, scanResponse))
+        {
+            Logger::error(SSTR << "Unable to update advertising instance " << (int)instance);
+            success = false;
+        }
+    }
+    return success;
 }
 
 // bool Mgmt::setAdvertisingData(const std::vector<uint8_t>& data)

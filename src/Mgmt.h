@@ -208,6 +208,12 @@ struct Mgmt
 	 */
 	bool setAdvertisingData(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse = {});
 
+	// Add/remove an auxiliary connectable advertising instance. Used to keep
+	// accepting new GATT clients while another client is connected.
+	static bool addAdvertisingInstance(uint8_t instanceId, const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse = {});
+	static bool removeAdvertisingInstance(uint8_t instanceId);
+	static bool setAdvertisingDataInstances(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse = {});
+
 	// Set the powered state to `newState` (true = powered on, false = powered off)
 	//
 	// Returns true on success, otherwise false

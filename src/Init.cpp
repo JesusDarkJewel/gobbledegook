@@ -160,7 +160,7 @@ bool idleFunc(void *pUserData)
 		const std::vector<uint8_t> advertisingData = TheServer->getAdvertisingData();
 		Logger::info(SSTR << "Updating advertising data to '" << Utils::hex(advertisingData) << "'");
 		static Mgmt mgmt;
-		if (!mgmt.setAdvertisingData(advertisingData))
+		if (!Mgmt::setAdvertisingDataInstances(advertisingData))
 		{
 			Logger::error("Unable to update advertising data");
 		}
@@ -791,7 +791,7 @@ void configureAdapter()
 		if (!adDataFlag)
 		{
 			Logger::info(SSTR << "JESUS Setting advertising data to '" << Utils::hex(advertisingData) << "'");
-			if (!mgmt.setAdvertisingData(advertisingData)) { setRetry(); return; }
+			if (!Mgmt::setAdvertisingDataInstances(advertisingData)) { setRetry(); return; }
 		}
 		Logger::debug(SSTR << "JESUS " << __LINE__);
 	}

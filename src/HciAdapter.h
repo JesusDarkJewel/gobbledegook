@@ -511,6 +511,7 @@ private:
 
 	// Our active connection count
 	int activeConnections;
+	std::vector<uint8_t> auxiliaryAdvertisingInstances;
 };
 
 }; // namespace ggk
