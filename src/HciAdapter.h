@@ -466,11 +466,24 @@ public:
 	// Returns true on success, otherwise false
 	bool sendCommand(HciHeader &request);
 
+	// Check HCI adapter health (thread-safe, non-blocking)
+	//
+	// Performs a quick Read Controller Information command to verify the adapter is responsive.
+	// This is the public API for application-level watchdog implementations.
+	//
+	// Returns true if the adapter responded successfully, false otherwise
+	bool checkHciHealth();
+
+	// Get the current consecutive failure count
+	int getConsecutiveFailures() const { return consecutiveHealthFailures.load(); }
+
+	// Reset the consecutive failure count
+	void resetConsecutiveFailures() { consecutiveHealthFailures.store(0); }
+
 	// Event processor, responsible for receiving events from the HCI socket
 	//
 	// This mehtod should not be called directly. Rather, it runs continuously on a thread until the server shuts down
 	void runEventThread();
-	void runWatchdogThread();
 
 	/**
 	 * Get a human-readable name for a command code.
@@ -497,8 +510,9 @@ private:
 
 	// Our event thread listens for events coming from the adapter and deals with them appropriately
 	static std::thread eventThread;
-	static std::thread watchdogThread;
-	std::atomic<bool> watchdogStop{false};
+
+	// Health monitoring state (for application-level watchdog)
+	std::atomic<int> consecutiveHealthFailures{0};
 
 	// Our adapter information
 	AdapterSettings adapterSettings;

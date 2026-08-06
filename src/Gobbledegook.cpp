@@ -518,3 +518,24 @@ int ggkRun(std::shared_ptr<Server> pServer, int maxAsyncInitTimeoutMS)
 		return 0;
 	}
 }
+
+// -----------------------------------------------------------------------------------------------------------------------------
+// HCI HEALTH MONITORING (Application-level Watchdog)
+// -----------------------------------------------------------------------------------------------------------------------------
+
+int ggkCheckHciHealth()
+{
+// Access the HciAdapter singleton through Mgmt
+// Note: This is thread-safe as checkHciHealth() is thread-safe
+return ggk::Mgmt::getAdapter().checkHciHealth() ? 1 : 0;
+}
+
+int ggkGetHciFailureCount()
+{
+return ggk::Mgmt::getAdapter().getConsecutiveFailures();
+}
+
+void ggkResetHciFailureCount()
+{
+ggk::Mgmt::getAdapter().resetConsecutiveFailures();
+}

@@ -290,3 +290,41 @@ void ggkInitLogging();
  * @see ggkInitLogging, ggkWait, ggkTriggerShutdown
  */
 int ggkRun(std::shared_ptr<ggk::Server> pServer, int maxAsyncInitTimeoutMS);
+
+// -----------------------------------------------------------------------------------------------------------------------------
+// HCI HEALTH MONITORING (Application-level Watchdog)
+// -----------------------------------------------------------------------------------------------------------------------------
+
+/**
+ * Check if the HCI adapter is responsive.
+ *
+ * This method performs a quick health check by sending a Read Controller Information
+ * command to the HCI adapter. It is designed to be called periodically by the
+ * application's own watchdog mechanism.
+ *
+ * IMPORTANT: This method is thread-safe and can be called from any thread.
+ *
+ * @return  1 if the HCI adapter responded successfully, 0 if the check failed.
+ *
+ * @note    This replaces the internal watchdog thread that was previously part of GGK.
+ *          Applications are now responsible for implementing their own watchdog policy
+ *          (e.g., retry logic, graceful shutdown, systemd watchdog integration).
+ */
+int ggkCheckHciHealth();
+
+/**
+ * Get the number of consecutive HCI health check failures.
+ *
+ * This counter is incremented each time ggkCheckHciHealth() fails and reset to zero
+ * when a check succeeds. Applications can use this to implement custom retry policies.
+ *
+ * @return  The number of consecutive failures since the last successful check.
+ */
+int ggkGetHciFailureCount();
+
+/**
+ * Reset the consecutive HCI failure counter.
+ *
+ * Call this after a successful recovery action to reset the failure count.
+ */
+void ggkResetHciFailureCount();
