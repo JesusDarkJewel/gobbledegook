@@ -51,12 +51,12 @@
 #include "Utils.h"
 #include "Mgmt.h"
 #include "Logger.h"
+#include "HciWatchdog.h"
 
 namespace ggk {
 
 // Our event thread listens for events coming from the adapter and deals with them appropriately
 std::thread HciAdapter::eventThread;
-std::thread HciAdapter::watchdogThread;
 
 const char * const HciAdapter::kEventTypeNames[kMaxEventType + 1] =
 {
@@ -468,8 +468,7 @@ bool HciAdapter::start()
 	try
 	{
 		eventThread = std::thread(ggk::runEventThread);
-		watchdogStop = false;
-		watchdogThread = std::thread(&HciAdapter::runWatchdogThread, this);
+		hciWatchdog.start();
 	}
 	catch(std::system_error &ex)
 	{
@@ -485,11 +484,7 @@ bool HciAdapter::start()
 // This method will block until the thread joins
 void HciAdapter::stop()
 {
-	watchdogStop = true;
-	if (watchdogThread.joinable())
-	{
-		watchdogThread.join();
-	}
+	hciWatchdog.stop();
 	Logger::trace("HciAdapter waiting for thread termination");
 
 	try
@@ -564,40 +559,6 @@ bool HciAdapter::sendCommand(HciHeader &request)
 	}
 
 	return fut.get();
-}
-
-void HciAdapter::runWatchdogThread()
-{
-	int consecutiveFailures = 0;
-	while (!watchdogStop)
-	{
-		for (int i = 0; i < 30 && !watchdogStop; ++i)
-			std::this_thread::sleep_for(std::chrono::seconds(1));
-		if (watchdogStop)
-			break;
-
-		HciHeader request;
-		request.code = Mgmt::EReadControllerInformationCommand;
-		request.controllerId = 0;
-		request.dataSize = 0;
-		if (sendCommand(request))
-		{
-			if (consecutiveFailures != 0)
-				Logger::info("HCI watchdog recovered");
-			consecutiveFailures = 0;
-			Logger::debug("HCI watchdog check passed");
-		}
-		else
-		{
-			++consecutiveFailures;
-			Logger::error(SSTR << "HCI watchdog check failed (" << consecutiveFailures << "/3)");
-			if (consecutiveFailures >= 3)
-			{
-				Logger::error("HCI watchdog is terminating BusOTS; systemd will restart it");
-				std::_Exit(1);
-			}
-		}
-	}
 }
 
 // Uses a std::condition_variable to wait for a response event for the given `commandCode` or `timeoutMS` milliseconds.
