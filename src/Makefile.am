@@ -26,6 +26,8 @@ libggk_a_SOURCES = DBusInterface.cpp \
                    HciAdapter.h \
                    HciSocket.cpp \
                    HciSocket.h \
+                   HciWatchdog.cpp \
+                   HciWatchdog.h \
                    Init.cpp \
                    Init.h \
                    Logger.cpp \

@@ -1,8 +1,11 @@
-/libggk.a
-/standalone-cross
-/tls-smoke-armv6
-/.build-orange/
-/.build-orange-gcc10/
-/.sysroot-orange/
-/libggk-orange.a
-/standalone-orange
+(src/HciWatchdog.cpp, src/HciWatchdog.h)
+
+### Deleted files:
+[]
+
+### Modified files:
+(src/HciAdapter.cpp, src/HciAdapter.h, src/Makefile.am)
+
+###current .gitignore Content
+
+Your output: Only the optimized .gitignore content (or empty if no ignores needed).
