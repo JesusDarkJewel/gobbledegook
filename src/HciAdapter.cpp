@@ -580,7 +580,10 @@ void HciAdapter::runWatchdogThread()
 		request.code = Mgmt::EReadControllerInformationCommand;
 		request.controllerId = 0;
 		request.dataSize = 0;
-		if (sendCommand(request))
+		const bool commandSucceeded = sendCommand(request);
+		const bool controllerPowered = commandSucceeded &&
+			controllerInformation.currentSettings.isSet(EHciPowered);
+		if (controllerPowered)
 		{
 			if (consecutiveFailures != 0)
 				Logger::info("HCI watchdog recovered");
@@ -590,6 +593,8 @@ void HciAdapter::runWatchdogThread()
 		else
 		{
 			++consecutiveFailures;
+			if (commandSucceeded)
+				Logger::error("HCI watchdog found the controller powered off");
 			Logger::error(SSTR << "HCI watchdog check failed (" << consecutiveFailures << "/3)");
 			if (consecutiveFailures >= 3)
 			{
