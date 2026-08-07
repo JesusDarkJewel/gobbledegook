@@ -304,6 +304,13 @@ void shutdown()
 	// Our new state: shutting down
 	setServerRunState(EStopping);
 
+	// Advertising instances are owned by the controller and survive the
+	// userspace process unless they are removed explicitly.
+	if (!Mgmt::removeAdvertisingInstances())
+	{
+		Logger::warn("Unable to remove all advertising instances during shutdown");
+	}
+
 	// Stop our HciAdapter
 	HciAdapter::getInstance().stop();
 

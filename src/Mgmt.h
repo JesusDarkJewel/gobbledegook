@@ -213,6 +213,7 @@ struct Mgmt
 	static bool addAdvertisingInstance(uint8_t instanceId, const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse = {});
 	static bool removeAdvertisingInstance(uint8_t instanceId);
 	static bool setAdvertisingDataInstances(const std::vector<uint8_t>& adData, const std::vector<uint8_t>& scanResponse = {});
+	static bool removeAdvertisingInstances();
 
 	// Set the powered state to `newState` (true = powered on, false = powered off)
 	//

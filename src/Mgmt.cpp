@@ -302,6 +302,20 @@ bool Mgmt::setAdvertisingDataInstances(const std::vector<uint8_t>& adData, const
     return success;
 }
 
+bool Mgmt::removeAdvertisingInstances()
+{
+    bool success = true;
+    const uint8_t instances = HciAdapter::getInstance().getSupportedAdvertisingInstances();
+    for (uint8_t instance = 1; instance <= instances; ++instance)
+    {
+        if (!removeAdvertisingInstance(instance))
+        {
+            success = false;
+        }
+    }
+    return success;
+}
+
 // bool Mgmt::setAdvertisingData(const std::vector<uint8_t>& data)
 // {
 // 	Logger::info("JESUS Setting advertising data");
