@@ -45,6 +45,13 @@
 #include "Logger.h"
 #include "Server.h"
 
+#ifndef GGK_BUILD_ID
+#define GGK_BUILD_ID unversioned
+#endif
+
+#define GGK_STRINGIFY_IMPL(value) #value
+#define GGK_STRINGIFY(value) GGK_STRINGIFY_IMPL(value)
+
 namespace ggk
 {
 	// During initialization, we'll check for complation at this interval
@@ -104,6 +111,8 @@ void ggkLogRegisterError(GGKLogReceiver receiver) { Logger::registerErrorReceive
 void ggkLogRegisterFatal(GGKLogReceiver receiver) { Logger::registerFatalReceiver(receiver); }
 void ggkLogRegisterTrace(GGKLogReceiver receiver) { Logger::registerTraceReceiver(receiver); }
 void ggkLogRegisterAlways(GGKLogReceiver receiver) { Logger::registerAlwaysReceiver(receiver); }
+
+const char *ggkGetBuildId() { return GGK_STRINGIFY(GGK_BUILD_ID); }
 
 // ---------------------------------------------------------------------------------------------------------------------------------
 //  _   _           _       _                                                                                                     _

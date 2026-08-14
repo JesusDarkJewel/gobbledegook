@@ -89,7 +89,7 @@
 //
 // If it is important to you or your build process that Gobbledegook exist as a library, you are welcome to do so. Just configure
 // your build process to build the Gobbledegook files (minus this file) as a library and link against that instead. All that is
-// required by applications linking to a Gobbledegook library is to include `include/Gobbledegook.h`.
+// required by applications linking to a Gobbledegook library is to include `include/ggk/Gobbledegook.h`.
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 #include <signal.h>
@@ -98,7 +98,7 @@
 #include <sstream>
 #include <memory>
 
-#include "../include/Gobbledegook.h"
+#include <ggk/Gobbledegook.h>
 #include "Server.h"
 #include "GattUuid.h"
 #include "GattService.h"

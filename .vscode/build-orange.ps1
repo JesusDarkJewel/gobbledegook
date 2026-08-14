@@ -6,6 +6,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 $projectRoot = (Resolve-Path "$PSScriptRoot\..").Path
+$buildId = (& git -C $projectRoot rev-parse HEAD).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $buildId) { throw "Unable to determine Gobbledegook Git revision" }
 if (-not $Sysroot) {
     $Sysroot = Join-Path $projectRoot ".sysroot-orange"
 }
@@ -26,8 +28,9 @@ New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 
 $common = @(
     "-fPIC", "-Wall", "-Wextra", "-std=c++2a", "-pthread", "-g", "-O2",
-    "-I$projectRoot\src",
+    "-DGGK_BUILD_ID=$buildId",
     "-I$projectRoot\include",
+    "-I$projectRoot\include\ggk",
     "-I$Sysroot\usr\include\glib-2.0",
     "-I$targetLib\glib-2.0\include",
     "-I$Sysroot\usr\include\dbus-1.0",
@@ -53,6 +56,7 @@ $objects = foreach ($source in $sources) {
 $library = Join-Path $projectRoot "libggk-orange.a"
 & $ar rcs $library @objects
 if ($LASTEXITCODE -ne 0) { throw "Unable to create $library" }
+Set-Content -LiteralPath "$($library).build-id" -Value $buildId -NoNewline
 
 $output = Join-Path $projectRoot "standalone-orange"
 & $cxx @common `

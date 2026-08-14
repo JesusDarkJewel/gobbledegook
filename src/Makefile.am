@@ -1,45 +1,46 @@
 # Build a static library (libggk.a)
 noinst_LIBRARIES = libggk.a
+AM_CPPFLAGS = -I$(top_srcdir)/include/ggk
 libggk_a_CXXFLAGS = -fPIC -Wall -Wextra -std=c++23 $(GLIB_CFLAGS) $(GIO_CFLAGS) $(GOBJECT_CFLAGS)
 libggk_a_SOURCES = DBusInterface.cpp \
-                   DBusInterface.h \
+                   ../include/ggk/DBusInterface.h \
                    DBusMethod.cpp \
-                   DBusMethod.h \
+                   ../include/ggk/DBusMethod.h \
                    DBusObject.cpp \
-                   DBusObject.h \
-                   DBusObjectPath.h \
+                   ../include/ggk/DBusObject.h \
+                   ../include/ggk/DBusObjectPath.h \
                    GattCharacteristic.cpp \
-                   GattCharacteristic.h \
+                   ../include/ggk/GattCharacteristic.h \
                    GattDescriptor.cpp \
-                   GattDescriptor.h \
+                   ../include/ggk/GattDescriptor.h \
                    GattInterface.cpp \
-                   GattInterface.h \
+                   ../include/ggk/GattInterface.h \
                    GattProperty.cpp \
-                   GattProperty.h \
+                   ../include/ggk/GattProperty.h \
                    GattService.cpp \
-                   GattService.h \
-                   GattUuid.h \
-                   Globals.h \
+                   ../include/ggk/GattService.h \
+                   ../include/ggk/GattUuid.h \
+                   ../include/ggk/Globals.h \
                    Gobbledegook.cpp \
-                   ../include/Gobbledegook.h \
+                   ../include/ggk/Gobbledegook.h \
                    HciAdapter.cpp \
-                   HciAdapter.h \
+                   ../include/ggk/HciAdapter.h \
                    HciSocket.cpp \
-                   HciSocket.h \
+                   ../include/ggk/HciSocket.h \
                    Init.cpp \
-                   Init.h \
+                   ../include/ggk/Init.h \
                    Logger.cpp \
-                   Logger.h \
+                   ../include/ggk/Logger.h \
                    Mgmt.cpp \
-                   Mgmt.h \
+                   ../include/ggk/Mgmt.h \
                    Server.cpp \
-                   Server.h \
+                   ../include/ggk/Server.h \
                    ServerUtils.cpp \
-                   ServerUtils.h \
+                   ../include/ggk/ServerUtils.h \
                    standalone.cpp \
-                   TickEvent.h \
+                   ../include/ggk/TickEvent.h \
                    Utils.cpp \
-                   Utils.h
+                   ../include/ggk/Utils.h
 # Build our standalone server (linking statically with libggk.a, linking dynamically with GLib)
 standalone_CXXFLAGS = -fPIC -Wall -Wextra -std=c++23 $(GLIB_CFLAGS) $(GIO_CFLAGS) $(GOBJECT_CFLAGS)
 noinst_PROGRAMS = standalone

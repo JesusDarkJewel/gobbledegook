@@ -22,6 +22,7 @@ for tool in "$cxx" "$ar" "$nm" "$readelf"; do
 done
 
 ws="$(pwd -P)"
+build_id="$(git -C "$ws" rev-parse HEAD)"
 cd "$ws/src"
 
 files=(
@@ -69,8 +70,10 @@ for file in "${files[@]}"; do
     object="${file%.cpp}.o"
     "$cxx" -c \
         -DHAVE_CONFIG_H \
+        -DGGK_BUILD_ID="$build_id" \
         -fPIC -Wall -Wextra -std=c++23 \
         -I"$ws/includes/" \
+        -I"$ws/include/ggk" \
         -I"$ws/includes/glib-2.0" \
         -I"$ws/includes/dbus-1.0/include" \
         -I"$ws/includes/glib-2.0/include" \
@@ -82,6 +85,7 @@ done
 
 rm -f ../libggk.a
 "$ar" rcs ../libggk.a "${objects[@]}"
+printf '%s\n' "$build_id" > ../libggk.a.build-id
 
 if "$nm" ../libggk.a |
     grep '__emutls_v\._ZSt' >/dev/null; then
@@ -93,7 +97,7 @@ fi
     -g -O2 -std=c++23 -fPIC -pthread -no-pie \
     -DHAVE_CONFIG_H \
     -I"$ws/include" \
-    -I"$ws/src" \
+    -I"$ws/include/ggk" \
     -I"$ws/includes" \
     -I"$ws/includes/glib-2.0" \
     -I"$ws/includes/dbus-1.0/include" \

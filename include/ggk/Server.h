@@ -32,7 +32,7 @@
 #include <memory>
 #include <mutex>
 
-#include "../include/Gobbledegook.h"
+#include <ggk/Gobbledegook.h>
 #include "DBusObject.h"
 
 namespace ggk {

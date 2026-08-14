@@ -6,3 +6,4 @@
 /.sysroot-orange/
 /libggk-orange.a
 /standalone-orange
+*.a.build-id

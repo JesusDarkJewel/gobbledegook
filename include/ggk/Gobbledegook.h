@@ -80,6 +80,11 @@ extern "C"
 	void ggkLogRegisterAlways(GGKLogReceiver receiver);
 	void ggkLogRegisterTrace(GGKLogReceiver receiver);
 
+	// Build identity of the linked GGK archive. Applications that use GGK's
+	// internal C++ headers must compare it with the source revision they built
+	// against before touching those ABI-sensitive types.
+	const char *ggkGetBuildId();
+
 	// -----------------------------------------------------------------------------------------------------------------------------
 	// SERVER DATA
 	// -----------------------------------------------------------------------------------------------------------------------------

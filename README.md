@@ -418,7 +418,7 @@ If you don't already have some kind of test harness, you'll probably want someth
 
 Think of Gobbledegook as a template BLE library. You're expected to modify `Server.cpp` and replace the example services with your own. Once you've customized your services, the rest is easy. 
 
-Just link against `libggk.a` and include `include/Gobbledegook.h` to access the public API in your app.  You may notice that the public interface isn't documented here. Instead, it is documented in `include/Gobbledegook.h`.
+Just link against `libggk.a` and include `include/ggk/Gobbledegook.h` to access the public API in your app.  You may notice that the public interface isn't documented here. Instead, it is documented in `include/ggk/Gobbledegook.h`.
 
 You can use `standalone.cpp` as a reference on how to get things setup in your code.
 
@@ -498,4 +498,4 @@ The following is the output from a reference tool used to connect to the `standa
 
 **Coding** your own BLE services is actually very easy once you become a little familiar with things. Think of Gobbledegook as a template BLE library. You're expected to modify `Server.cpp` and replace the example services with your own. Do yourself a favor and scan through the **Implementing services with GGK** section. It's your quickest path to understanding the foundation.
 
-**Integrating** into your app is easy: just link against `libggk.a` and include `include/Gobbledegook.h` where needed. Use `standalone.cpp` as a template for getting things setup in your code.
+**Integrating** into your app is easy: just link against `libggk.a` and include `include/ggk/Gobbledegook.h` where needed. Use `standalone.cpp` as a template for getting things setup in your code.
