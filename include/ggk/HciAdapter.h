@@ -480,16 +480,9 @@ public:
 
 private:
 	// Private constructor for our Singleton
-	HciAdapter() : commandResponseLock(commandResponseMutex), conditionalValue(-1), commandResponseSuccess(false), activeConnections(0), supportedAdvertisingInstances(1) {}
+	HciAdapter() : conditionalValue(-1), commandResponseSuccess(false), activeConnections(0), supportedAdvertisingInstances(1) {}
 
-	// Uses a std::condition_variable to wait for a response event for the given `commandCode` or `timeoutMS` milliseconds.
-	//
-	// Returns true if the response event was received for `commandCode` or false if the timeout expired.
-	//
-	// Command responses are set via `setCommandResponse()`
-	bool waitForCommandResponse(uint16_t commandCode, int timeoutMS);
-
-	// Sets the command response and notifies the waiting std::condition_variable (see `waitForCommandResponse`)
+	// Sets the command response and notifies the waiting sendCommand() call.
 	void setCommandResponse(uint16_t commandCode, uint8_t status);
 
 	// Our HCI Socket, which allows us to talk directly to the kernel
@@ -509,7 +502,6 @@ private:
 	std::condition_variable cvCommandResponse;
 	std::mutex commandResponseMutex;
 	std::mutex commandSendMutex;
-	std::unique_lock<std::mutex> commandResponseLock;
 	int conditionalValue;
 	bool commandResponseSuccess;
 

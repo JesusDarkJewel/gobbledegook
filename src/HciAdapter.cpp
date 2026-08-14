@@ -44,8 +44,6 @@
 
 #include <string.h>
 #include <chrono>
-#include <future>
-
 #include "HciAdapter.h"
 #include "HciSocket.h"
 #include "Utils.h"
@@ -545,13 +543,11 @@ bool HciAdapter::sendCommand(HciHeader &request)
 	uint16_t code = request.code;
 	uint16_t dataSize = request.dataSize;
 
+	// This lock is local to the calling thread. wait_for() releases it while
+	// the event thread records the response, then reacquires it before return.
+	std::unique_lock<std::mutex> responseLock(commandResponseMutex);
 	conditionalValue = -1;
 	commandResponseSuccess = false;
-	std::future<bool> fut = std::async(std::launch::async,
-	[&]() mutable
-	{
-		return waitForCommandResponse(code, kMaxEventWaitTimeMS);
-	});
 
 	// Prepare the request to be sent (endianness correction)
 	request.toNetwork();
@@ -563,7 +559,24 @@ bool HciAdapter::sendCommand(HciHeader &request)
 		return false;
 	}
 
-	return fut.get();
+	Logger::debug(SSTR << "  + Waiting on command code " << code << " for up to " << kMaxEventWaitTimeMS << "ms");
+	const bool responseReceived = cvCommandResponse.wait_for(responseLock, std::chrono::milliseconds(kMaxEventWaitTimeMS),
+		[&]
+		{
+			return conditionalValue == code;
+		}
+	);
+
+	if (!responseReceived)
+	{
+		Logger::warn(SSTR << "  + Timed out waiting on command code " << Utils::hex(code) << " (" << getCommandCodeName(code) << ")");
+	}
+	else
+	{
+		Logger::debug(SSTR << "  + Recieved the command code we were waiting for: " << Utils::hex(code) << " (" << getCommandCodeName(code) << ")");
+	}
+
+	return responseReceived && commandResponseSuccess;
 }
 
 void HciAdapter::runWatchdogThread()
@@ -605,35 +618,7 @@ void HciAdapter::runWatchdogThread()
 	}
 }
 
-// Uses a std::condition_variable to wait for a response event for the given `commandCode` or `timeoutMS` milliseconds.
-//
-// Returns true if the response event was received for `commandCode` or false if the timeout expired.
-//
-// Command responses are set via `setCommandResponse()`
-bool HciAdapter::waitForCommandResponse(uint16_t commandCode, int timeoutMS)
-{
-	Logger::debug(SSTR << "  + Waiting on command code " << commandCode << " for up to " << timeoutMS << "ms");
-
-	bool success = cvCommandResponse.wait_for(commandResponseLock, std::chrono::milliseconds(timeoutMS),
-		[&]
-		{
-			return conditionalValue == commandCode;
-		}
-	);
-
-	if (!success)
-	{
-		Logger::warn(SSTR << "  + Timed out waiting on command code " << Utils::hex(commandCode) << " (" << getCommandCodeName(commandCode) << ")");
-	}
-	else
-	{
-		Logger::debug(SSTR << "  + Recieved the command code we were waiting for: " << Utils::hex(commandCode) << " (" << getCommandCodeName(commandCode) << ")");
-	}
-
-	return success && commandResponseSuccess;
-}
-
-// Sets the command response and notifies the waiting std::condition_variable (see `waitForCommandResponse`)
+// Sets the command response and notifies the waiting sendCommand() call.
 void HciAdapter::setCommandResponse(uint16_t commandCode, uint8_t status)
 {
 	std::lock_guard<std::mutex> lk(commandResponseMutex);
